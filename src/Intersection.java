@@ -18,6 +18,10 @@ public class Intersection {
         return myAccessibility;
     }
 
+    public ArrayList<Road> getRoadList() {
+        return myRoads;
+    }
+
     public Road connectIntersection(Intersection theOther, double theDistance, double theSpeedLimit) {
         Road newRoad = new Road(this, theOther, theDistance, theSpeedLimit);
         theOther.addRoad(newRoad);
@@ -27,6 +31,27 @@ public class Intersection {
 
     public void addRoad(Road theRoad) {
         myRoads.add(theRoad);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) { // compare memory location
+            return true;
+        }
+        if (obj == null) { // check if null
+            return false;
+        }
+        if (!(obj instanceof Intersection)) { // check if an Intersection obj
+            return false;
+        }
+        Intersection otherIntersection = (Intersection) obj;
+        if (otherIntersection.getID() != myId) { // check if it has same ID
+            return false;
+        }
+        if (otherIntersection.isLocation() != myAccessibility) { // check if it's also a location or not
+            return false;
+        }
+        return myRoads.equals(otherIntersection.getRoadList()); // check if roads are equivalent
     }
 
     @Override
@@ -40,16 +65,16 @@ public class Intersection {
         sb.append(myId);
         sb.append(": [");
         for (Road r : myRoads) {
-            if (r.getSourceID() != myId) {
-                sb.append(r.getSourceID());
+            if (r.getSource().getID() != myId) {
+                sb.append(r.getSource().getID());
             } else {
-                sb.append(r.getDestinationID());
+                sb.append(r.getDestination().getID());
 
             }
-            sb.append("(");
-            sb.append(Math.round((r.getLength()/100)/r.getSpeedLimit()*60));
-            sb.append(" mins), ");
-
+//            sb.append("(");
+//            sb.append(r.getDefaultTime());
+//            sb.append(" mins), ");
+            sb.append(", ");
         }
         sb.deleteCharAt(sb.length()-1);
         sb.deleteCharAt(sb.length()-1);
