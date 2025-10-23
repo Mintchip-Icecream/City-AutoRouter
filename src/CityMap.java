@@ -41,9 +41,21 @@ public class CityMap {
         myRoads.add(newRoad);
     }
 
+    public Road getRoad(Intersection intersection1, Intersection intersection2) {
+        for (Road r: intersection1.getRoadList()) {
+            if (r.getDestination().equals(intersection2)) {
+                return r;
+            }
+            if (r.getSource().equals(intersection2)) {
+                return r;
+            }
+        }
+        return null;
+    }
+
     public Intersection getIntersection(int theIntersectionID) {
         if (theIntersectionID < myIntersections.size()) {
-            return myIntersections.get(theIntersectionID);
+            return myIntersections.get(theIntersectionID-1);
         }
         return null;
     }

@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 public class Main {
     private static String fileName = "src/simMap.txt";
@@ -9,6 +10,10 @@ public class Main {
 
         CityMap cm = new CityMap(fileContents);
         System.out.println(cm);
+        Router route = new Router(cm);
+        System.out.println("Computing Optimal Path from 14 to 36...");
+        int[] result = route.computeRoute(cm.getIntersection(14), cm.getIntersection(36));
+        System.out.println("Route: " + Arrays.toString(result) + ", Time = " + route.routeLength(result) + " mins");
     }
 
 
