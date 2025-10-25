@@ -33,7 +33,7 @@ public class Router {
         ComparableIntersection current = new ComparableIntersection(theStart, 0, null);
         pq.add(current);
 
-        for (Road r : current.getIntersection().getRoadList()) {
+        for (Road r : current.getIntersection().getRoadList()) { // initialize the priority queue by
             Intersection nonOriginNode;
             if (!r.getSource().equals(current.getIntersection())) { // get whichever intersection in the road isn't our current
                 nonOriginNode = r.getSource();
@@ -44,6 +44,7 @@ public class Router {
             pq.add(newNode);
             seenNode.put(current.getIntersection(), current);
         }
+        pq.remove(current);
 
         closedNode.add(current);
 
