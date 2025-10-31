@@ -1,3 +1,4 @@
+import javax.smartcardio.Card;
 import java.util.ArrayList;
 
 public class Intersection {
@@ -22,8 +23,8 @@ public class Intersection {
         return myRoads;
     }
 
-    public Road connectIntersection(Intersection theOther, double theDistance, double theSpeedLimit) {
-        Road newRoad = new Road(this, theOther, theDistance, theSpeedLimit);
+    public Road connectIntersection(Intersection theOther, double theDistance, double theSpeedLimit, CardinalDirection theDirection) {
+        Road newRoad = new Road(this, theOther, theDistance, theSpeedLimit, theDirection);
         theOther.addRoad(newRoad);
         this.addRoad(newRoad);
         return newRoad;

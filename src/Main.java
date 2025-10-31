@@ -14,6 +14,7 @@ public class Main {
         System.out.println("Computing Optimal Path from 14 to 36...");
         int[] result = route.computeRoute(cm.getIntersection(14), cm.getIntersection(36));
         System.out.println("Route: " + Arrays.toString(result) + ", Time = " + route.routeLength(result) + " mins");
+        System.out.println("Directions: "  + route.directions(result));
     }
 
 
