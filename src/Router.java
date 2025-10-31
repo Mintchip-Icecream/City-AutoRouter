@@ -17,6 +17,39 @@ public class Router {
         return (double) Math.round(result*100)/100;
     }
 
+    public String directions(int[] theRoute) {
+        StringBuilder sb = new StringBuilder();
+        Intersection from = myMap.getIntersection(theRoute[0]);
+        Intersection to = myMap.getIntersection(theRoute[1]);
+        Road r = myMap.getRoad(from, to);
+        CardinalDirection currentDir = r.getDirection(from);
+        double accumulator = r.getLength();
+        sb.append("From Location ");
+        sb.append(from.getID());
+        for (int i = 2; i < theRoute.length; i++) {
+            from = myMap.getIntersection(theRoute[i-1]);
+            to = myMap.getIntersection(theRoute[i]);
+            r = myMap.getRoad(from, to);
+            CardinalDirection newDir = r.getDirection(from);
+            assert currentDir != null;
+            currentDir = CardinalDirection.turnDirection(currentDir, newDir);
+            if (currentDir == CardinalDirection.FORWARD) {
+                accumulator += r.getLength();
+            } else {
+                sb.append(", then turn ");
+                sb.append(currentDir);
+                sb.append(" after ");
+                sb.append(accumulator);
+                sb.append(" meters");
+                accumulator = r.getLength();
+            }
+            currentDir = newDir;
+        }
+        sb.append(" onto location ");
+        sb.append(to.getID());
+        return sb.toString();
+    }
+
     /**
      *
      * @param theStart
@@ -128,62 +161,5 @@ public class Router {
             return Double.compare(myPathWeight, o.getPathWeight());
         }
     }
-
-//      SCRAPPED COMPUTE ROUTE
-//    public int[] computeRoute(Intersection theStart, Intersection theEnd) {
-//        HashMap<Intersection, Double> distances = new HashMap(); // key: node, value: distance value
-//        HashMap<Intersection, Intersection> visitedNodes = new HashMap(); // Key: node, Value: origin node
-//
-//        visitedNodes.put(theStart, null);
-//        distances.put(theStart, 0.0);
-//
-//        Intersection current = theStart;
-//
-//
-//        while (true) {
-//            Intersection nextNode;
-//            double leastTime = Double.MAX_VALUE;
-//            if (current.equals(theEnd)) {
-//                for (Road r: current.getRoadList()) {
-//                    Intersection nonOriginNode;
-//                    if (!r.getSource().equals(current)) { // get whichever intersection in the road isn't our current
-//                        nonOriginNode = r.getSource();
-//                    } else {
-//                        nonOriginNode = r.getDestination();
-//                    }
-//                    if (distances.containsKey(nonOriginNode)) {
-//
-//                    }
-//                }
-//            }
-//
-//            for (Road r: current.getRoadList()) {
-//                Intersection nonOriginNode;
-//                if (!r.getSource().equals(current)) { // get whichever intersection in the road isn't our current
-//                    nonOriginNode = r.getSource();
-//                } else {
-//                    nonOriginNode = r.getDestination();
-//                }
-//
-//                double pathTotal = distances.get(current) + r.getDefaultTime(); // total cost of going this path
-//
-//                if (distances.containsKey(nonOriginNode)) { // if we've already checked this node, check if this path is better
-//                    if (distances.get(nonOriginNode) < pathTotal) {
-//                        visitedNodes.put(nonOriginNode, current);// put node and origin into map
-//                        distances.put(nonOriginNode, pathTotal); // put node and path length into map
-//                    }  else { // if accessing this node from our current node is worse, then ignore/skip
-//                        continue;
-//                    }
-//                } else { // if node has never been accessed before, add it to our list
-//                    visitedNodes.put(nonOriginNode, current);
-//                    distances.put(nonOriginNode, pathTotal);
-//                }
-//
-//                if (pathTotal < leastTime) { // if this road is our shortest road, traverse to it
-//                    nextNode = nonOriginNode;
-//                }
-//            }
-//        }
-//    }
 
 }

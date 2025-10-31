@@ -1,12 +1,14 @@
 public class Road {
-    Intersection[] myConnection;
-    double myLength;
-    double mySpeedLimit;
+    private final Intersection[] myConnection;
+    private final double myLength;
+    private final double mySpeedLimit;
+    private final CardinalDirection myDirection;
 
-    public Road(Intersection theSource, Intersection theDestination, double theDistance, double theSpeedLimit) {
+    public Road(Intersection theSource, Intersection theDestination, double theDistance, double theSpeedLimit, CardinalDirection theDirection) {
         this.myConnection = new Intersection[]{theSource, theDestination};
         this.myLength = theDistance;
         this.mySpeedLimit = theSpeedLimit;
+        this.myDirection = theDirection;
     }
 
     public double getLength() {
@@ -23,6 +25,17 @@ public class Road {
 
     public Intersection getDestination() {
         return myConnection[1];
+    }
+
+    public CardinalDirection getDirection() {
+        return myDirection;
+    }
+
+    public CardinalDirection getDirection(Intersection fromIntersection) {
+       if (!fromIntersection.equals(myConnection[0])){
+           return CardinalDirection.swapDirection(myDirection);
+       }
+        return myDirection;
     }
 
     /**
