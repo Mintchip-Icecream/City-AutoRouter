@@ -16,7 +16,7 @@ public class Conditions {
         this.trafficDensity = trafficDensity;
     }
 
-    public double getBlockageSeverity() {
+    public double getObstacleSeverity() {
         return blockageSeverity;
     }
 
@@ -26,11 +26,5 @@ public class Conditions {
 
     public double getWeatherFactor() {
         return weatherFactor;
-    }
-    public double getSafetyRisk() {
-        return (weatherFactor/2) + (blockageSeverity/2);
-    }
-    public double getTimeDelay() {
-        return (weatherFactor/2) + (trafficDensity/2);
     }
 }
