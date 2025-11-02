@@ -65,8 +65,16 @@ public class CityMap {
         return null;
     }
 
+    public Intersection[] getAllIntersections() {
+        return myIntersections.toArray(new Intersection[0]);
+    }
+
+    public Road[] getAllRoads() {
+        return myRoads.toArray(new Road[0]);
+    }
+
     public Intersection getIntersection(int theIntersectionID) {
-        if (theIntersectionID < myIntersections.size()) {
+        if (theIntersectionID <= myIntersections.size()) {
             return myIntersections.get(theIntersectionID-1);
         }
         return null;
