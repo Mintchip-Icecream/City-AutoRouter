@@ -26,19 +26,19 @@ public class Main {
             int[] resultPath = route.computeRoute(cm.getIntersection(14),
                     cm.getIntersection(36), threshold, em);
             if (resultPath == null) {
-                threshold += thresholdIncrementer;
+                threshold -= thresholdIncrementer;
             } else if (Arrays.compare(resultPath, prevRoute) != 0) {
                 prevRoute = resultPath;
                 counter++;
                 System.out.println("Route: " + Arrays.toString(resultPath) + ", Time = "
-                        + route.routeLength(resultPath) + " mins, risk = "
+                        + route.routeLength(resultPath, em) + " mins, risk = "
                         + ((double) Math.round(route.routeSafety(resultPath, em)*100)/100));
                 threshold -= thresholdIncrementer;
             } else {
                 threshold -= thresholdIncrementer;
             }
         }
-        System.out.println(counter + ", max threshold" + threshold);
+        System.out.println("Unique Paths Found: " + counter);
     }
 
 

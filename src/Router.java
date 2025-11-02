@@ -27,6 +27,16 @@ public class Router {
         return (double) Math.round(result*100)/100;
     }
 
+    public double routeLength(int[] theRoute, EnvironmentSimulator theSim) {
+        double result = 0;
+        for (int i = 1; i < theRoute.length; i++) {
+            Road r = myMap.getRoad(myMap.getIntersection(theRoute[i-1]), myMap.getIntersection(theRoute[i]));
+            double time = roadTime(r, theSim);
+            result += time;
+        }
+        return (double) Math.round(result*100)/100;
+    }
+
     public String directions(int[] theRoute) {
         StringBuilder sb = new StringBuilder();
         Intersection from = myMap.getIntersection(theRoute[0]);
@@ -198,12 +208,15 @@ public class Router {
         return thePrevNode.getPathWeight() + theRoadTime;
     }
 
-    private double pathWeight(ComparableIntersection thePrevNode, Road theRoad, EnvironmentSimulator theSim) {
+    private double roadTime(Road theRoad, EnvironmentSimulator theSim) {
         Conditions roadCon = theSim.getCondition(theRoad);
         double trafficMultiplier = roadCon.getObstacleSeverity() * OBSTACLE_TIME_WEIGHT
                 + roadCon.getTrafficDensity() * TRAFFIC_TIME_WEIGHT + roadCon.getWeatherFactor() * WEATHER_TIME_WEIGHT;
-        double roadTime = theRoad.getDefaultTime() * Math.exp(CONDITION_SCALAR * trafficMultiplier);
-        return thePrevNode.getPathWeight() + roadTime;
+        return theRoad.getDefaultTime() * Math.exp(CONDITION_SCALAR * trafficMultiplier);
+    }
+
+    private double pathWeight(ComparableIntersection thePrevNode, Road theRoad, EnvironmentSimulator theSim) {
+        return thePrevNode.getPathWeight() + roadTime(theRoad, theSim);
     }
 
     private void putNode(double theWeight, Intersection theNode, ComparableIntersection thePrevNode,
