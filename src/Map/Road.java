@@ -1,3 +1,5 @@
+package Map;
+
 public class Road {
     private final Intersection[] myConnection;
     private final double myLength;
@@ -55,7 +57,7 @@ public class Road {
         if (obj == null) { // check if null
             return false;
         }
-        if (!(obj instanceof Road)) { // check if an Intersection obj
+        if (!(obj instanceof Road)) { // check if an Map.Intersection obj
             return false;
         }
         Road otherRoad = (Road) obj;

@@ -1,3 +1,5 @@
+package Simulation;
+
 public class Conditions {
     private double weatherFactor;
     private double blockageSeverity;

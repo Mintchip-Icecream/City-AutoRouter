@@ -1,4 +1,7 @@
+package Simulation;
+
 import java.util.*;
+import Map.*;
 
 public class EnvironmentSimulator {
     private final CityMap myMap;
@@ -29,6 +32,15 @@ public class EnvironmentSimulator {
         return defaultCondition;
     }
 
+    public HashMap<Intersection, Conditions> getIntersectionConditions() {
+        return myIntersections;
+    }
+
+    public HashMap<Road, Conditions> getRoadConditions() {
+        return myRoads;
+    }
+
+
     // principle of simulating: we randomly set the radius of effects (so if it's rainy in 1 edge, it should be
     // rainy for a few kilometers more)
 
@@ -51,7 +63,7 @@ public class EnvironmentSimulator {
         Random rand = new Random(theRNGSeed);
 
         if (DEBUG_MODE) {
-            System.out.println("Total Mileage of Road: " + distance);
+            System.out.println("Total Mileage of Map.Road: " + distance);
             System.out.println("Simulating Weather...");
         }
 
@@ -63,7 +75,7 @@ public class EnvironmentSimulator {
         fillOutCondition(rand, weatherFactors, LIGHT_WEATHER);
 
         if (DEBUG_MODE) {
-            System.out.println("Printing Weather Conditions for all locations and intersections:");
+            System.out.println("Printing Weather Simulation.Conditions for all locations and intersections:");
             printMap(weatherFactors);
             System.out.println("Simulating traffic...");
         }
@@ -74,7 +86,7 @@ public class EnvironmentSimulator {
         fillOutCondition(rand, trafficFactors, LIGHT_TRAFFIC);
 
         if (DEBUG_MODE) {
-            System.out.println("Printing Traffic Conditions for all locations and intersections:");
+            System.out.println("Printing Traffic Simulation.Conditions for all locations and intersections:");
             printMap(trafficFactors);
             System.out.println("Simulating obstacles...");
         }
@@ -84,7 +96,7 @@ public class EnvironmentSimulator {
         fillOutCondition(rand, blockageFactors, LIGHT_BLOCKAGE);
 
         if (DEBUG_MODE) {
-            System.out.println("Printing Obstacle Conditions for all locations and intersections:");
+            System.out.println("Printing Obstacle Simulation.Conditions for all locations and intersections:");
             printMap(blockageFactors);
             System.out.println("Simulation Completed!");
         }
@@ -118,8 +130,7 @@ public class EnvironmentSimulator {
     private void setAllConditions(HashMap<Intersection, Double> theWeather, HashMap<Intersection, Double> theObstacles,
                                   HashMap<Intersection, Double> theTraffic) {
         for (Intersection i: myMap.getAllIntersections()) {
-            Conditions conditionList = new Conditions(theWeather.get(i), theObstacles.get(i), theTraffic.get(i));
-            myIntersections.put(i, conditionList);
+            applyCondition(i, theWeather.get(i), theObstacles.get(i), theTraffic.get(i));
         }
         for (Road r: myMap.getAllRoads()) {
             Intersection source = r.getSource();
@@ -127,8 +138,7 @@ public class EnvironmentSimulator {
             double weatherFactor = (theWeather.get(source) + theWeather.get(dest))/2;
             double blockageFactor = (theObstacles.get(source) + theObstacles.get(dest))/2;
             double trafficFactor = (theTraffic.get(source) + theTraffic.get(dest))/2;
-            Conditions conditionList = new Conditions(weatherFactor, blockageFactor, trafficFactor);
-            myRoads.put(r, conditionList);
+            applyCondition(r, weatherFactor, blockageFactor, trafficFactor);
         }
     }
 
@@ -187,7 +197,7 @@ public class EnvironmentSimulator {
     }
 
     private double makeConditionCluster(double theRadius, Intersection theOrigin, double theOriginCondition,
-                                       HashMap<Intersection, Double> theConditionMap) {
+                                        HashMap<Intersection, Double> theConditionMap) {
         // set up our bfs from the origin
         Queue<Intersection> bfsQueue =  new LinkedList<>();
         HashMap<Intersection, double[]> distances = new HashMap<>();
@@ -228,7 +238,7 @@ public class EnvironmentSimulator {
 
     // get the distance matrix [North, South, East, West] of an intersection using previous distance matrix
     private double[] addCartesianDistances(Intersection theFrom, Intersection theTo, double[] distances) {
-        Road r = myMap.getRoad(theFrom, theTo);
+        Road r = CityMap.getRoad(theFrom, theTo);
         double[] result = distances.clone();
         switch (r.getDirection(theFrom)) {
             case NORTH: result[0] += r.getLength();
