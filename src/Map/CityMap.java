@@ -1,3 +1,5 @@
+package Map;
+
 import java.util.ArrayList;
 
 public class CityMap {
@@ -53,7 +55,7 @@ public class CityMap {
         myRoads.add(newRoad);
     }
 
-    public Road getRoad(Intersection intersection1, Intersection intersection2) {
+    public static Road getRoad(Intersection intersection1, Intersection intersection2) {
         for (Road r: intersection1.getRoadList()) {
             if (r.getDestination().equals(intersection2)) {
                 return r;

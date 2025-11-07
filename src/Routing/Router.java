@@ -1,87 +1,40 @@
+package Routing;
+
 import java.util.*;
+import Map.*;
+import Simulation.*;
 
 public class Router {
     CityMap myMap;
-    private static final double CONDITION_SCALAR = 1.5;
-    private static final double WEATHER_TIME_WEIGHT = 0.2;
-    private static final double TRAFFIC_TIME_WEIGHT = 0.4;
-    private static final double OBSTACLE_TIME_WEIGHT = 0.4;
-    private static final double WEATHER_SAFETY_WEIGHT = 0.2;
-    private static final double TRAFFIC_SAFETY_WEIGHT = 0.3;
-    private static final double OBSTACLE_SAFETY_WEIGHT = 0.5;
     private static final double DOUBLE_EPSILON = 0.0005;
-
-
 
     public Router(CityMap theMap) {
         this.myMap = theMap;
     }
 
-    public double routeLength(int[] theRoute) {
+    public double routeLength(Route theRoute) {
         double result = 0;
-        for (int i = 1; i < theRoute.length; i++) {
-            Road r = myMap.getRoad(myMap.getIntersection(theRoute[i-1]), myMap.getIntersection(theRoute[i]));
+        int[] routePath = theRoute.getRouteIDs();
+        for (int i = 1; i < routePath.length; i++) {
+            Road r = CityMap.getRoad(myMap.getIntersection(routePath[i-1]), myMap.getIntersection(routePath[i]));
+            if (r == null) {
+                return 0;
+            }
             double time = r.getDefaultTime();
             result += time;
         }
         return (double) Math.round(result*100)/100;
     }
 
-    public double routeLength(int[] theRoute, EnvironmentSimulator theSim) {
+    public double routeLength(Route theRoute, EnvironmentSimulator theSim) {
         double result = 0;
-        for (int i = 1; i < theRoute.length; i++) {
-            Road r = myMap.getRoad(myMap.getIntersection(theRoute[i-1]), myMap.getIntersection(theRoute[i]));
-            double time = roadTime(r, theSim);
+        int[] routePath = theRoute.getRouteIDs();
+        for (int i = 1; i < routePath.length; i++) {
+            Road r = CityMap.getRoad(myMap.getIntersection(routePath[i-1]), myMap.getIntersection(routePath[i]));
+            double time = SafetyChecker.roadTime(r, theSim);
             result += time;
         }
         return (double) Math.round(result*100)/100;
-    }
-
-    public String directions(int[] theRoute) {
-        StringBuilder sb = new StringBuilder();
-        Intersection from = myMap.getIntersection(theRoute[0]);
-        Intersection to = myMap.getIntersection(theRoute[1]);
-        Road r = myMap.getRoad(from, to);
-        CardinalDirection currentDir = r.getDirection(from);
-        double accumulator = r.getLength();
-        sb.append("From Location ");
-        sb.append(from.getID());
-        for (int i = 2; i < theRoute.length; i++) {
-            from = myMap.getIntersection(theRoute[i-1]);
-            to = myMap.getIntersection(theRoute[i]);
-            r = myMap.getRoad(from, to);
-            CardinalDirection newDir = r.getDirection(from);
-            assert currentDir != null;
-            currentDir = CardinalDirection.turnDirection(currentDir, newDir);
-            if (currentDir == CardinalDirection.FORWARD) {
-                accumulator += r.getLength();
-            } else {
-                sb.append(", then turn ");
-                sb.append(currentDir);
-                sb.append(" after ");
-                sb.append(accumulator);
-                sb.append(" meters");
-                accumulator = r.getLength();
-            }
-            currentDir = newDir;
-        }
-        sb.append(" onto location ");
-        sb.append(to.getID());
-        return sb.toString();
-    }
-
-    // maxRouteSafety
-    public double routeSafety(int[] theRoute, EnvironmentSimulator theSim) {
-        double maxRouteSafety = 0.0;
-        Intersection from, to = myMap.getIntersection(theRoute[1]);
-        for (int i = 1; i < theRoute.length; i++) {
-            from = myMap.getIntersection(theRoute[i-1]);
-            to = myMap.getIntersection(theRoute[i]);
-            Road r = myMap.getRoad(from, to);
-            maxRouteSafety = Math.max(maxRouteSafety, Math.max(safetyRisk(from, theSim), safetyRisk(r, theSim)));
-        }
-        maxRouteSafety = Math.max(maxRouteSafety, safetyRisk(to, theSim));
-        return maxRouteSafety;
     }
 
     /**
@@ -90,7 +43,7 @@ public class Router {
      * @param theEnd
      * @return null if we cannot compute route, route as a series of intersection IDs
      */
-    public int[] computeRoute(Intersection theStart, Intersection theEnd) {
+    public Route computeRoute(Intersection theStart, Intersection theEnd) {
 
         // initialize our necessary data structures
         PriorityQueue<ComparableIntersection> pq = new PriorityQueue<>(); // for adding new nodes
@@ -129,16 +82,16 @@ public class Router {
         return null;
     }
 
-    public int[] computeRoute(Intersection theStart, Intersection theEnd,
+    public Route computeRoute(Intersection theStart, Intersection theEnd,
                               double theThreshold, EnvironmentSimulator theSim) {
 
         PriorityQueue<ComparableIntersection> pq = new PriorityQueue<>(); // for adding new nodes
         HashMap<Intersection, ComparableIntersection> seenNode = new HashMap<>(); // also for adding new nodes
         HashSet<ComparableIntersection> closedNode = new HashSet<>();
 
-        if (compareDouble(safetyRisk(theStart, theSim), theThreshold) == 1) {
+        if (compareDouble(SafetyChecker.safetyRisk(theStart, theSim), theThreshold) == 1) {
             return null;
-        } else if (compareDouble(safetyRisk(theEnd, theSim), theThreshold) == 1) {
+        } else if (compareDouble(SafetyChecker.safetyRisk(theEnd, theSim), theThreshold) == 1) {
             return null;
         }
         ComparableIntersection current = new ComparableIntersection(theStart, 0, null);
@@ -146,7 +99,7 @@ public class Router {
 
         while (!pq.isEmpty()) {
             current = pq.poll();
-            if (compareDouble(safetyRisk(current.getIntersection(), theSim), theThreshold) == 1) {
+            if (compareDouble(SafetyChecker.safetyRisk(current.getIntersection(), theSim), theThreshold) == 1) {
                 closedNode.add(current);
                 continue;
             }
@@ -160,7 +113,7 @@ public class Router {
 
                 double pathTotal = pathWeight(current, r, theSim); //compute the weight of path
 
-                if (compareDouble(safetyRisk(r, theSim), theThreshold) == 1) { // skip if road is over the safety threshold
+                if (compareDouble(SafetyChecker.safetyRisk(r, theSim), theThreshold) == 1) { // skip if road is over the safety threshold
                     continue;
                 }
 
@@ -192,31 +145,13 @@ public class Router {
         return -1;
     }
 
-    private double safetyRisk(Intersection theIntersection, EnvironmentSimulator theSim) {
-        Conditions cond = theSim.getCondition(theIntersection);
-        return cond.getObstacleSeverity() * OBSTACLE_SAFETY_WEIGHT + cond.getWeatherFactor() * WEATHER_SAFETY_WEIGHT
-                + cond.getTrafficDensity() * TRAFFIC_SAFETY_WEIGHT;
-    }
-
-    private double safetyRisk(Road theRoad, EnvironmentSimulator theSim) {
-        Conditions cond = theSim.getCondition(theRoad);
-        return cond.getObstacleSeverity() * OBSTACLE_SAFETY_WEIGHT + cond.getWeatherFactor() * WEATHER_SAFETY_WEIGHT
-                + cond.getTrafficDensity() * TRAFFIC_SAFETY_WEIGHT;
-    }
-
     private double pathWeight(ComparableIntersection thePrevNode, double theRoadTime) {
         return thePrevNode.getPathWeight() + theRoadTime;
     }
 
-    private double roadTime(Road theRoad, EnvironmentSimulator theSim) {
-        Conditions roadCon = theSim.getCondition(theRoad);
-        double trafficMultiplier = roadCon.getObstacleSeverity() * OBSTACLE_TIME_WEIGHT
-                + roadCon.getTrafficDensity() * TRAFFIC_TIME_WEIGHT + roadCon.getWeatherFactor() * WEATHER_TIME_WEIGHT;
-        return theRoad.getDefaultTime() * Math.exp(CONDITION_SCALAR * trafficMultiplier);
-    }
 
     private double pathWeight(ComparableIntersection thePrevNode, Road theRoad, EnvironmentSimulator theSim) {
-        return thePrevNode.getPathWeight() + roadTime(theRoad, theSim);
+        return thePrevNode.getPathWeight() + SafetyChecker.roadTime(theRoad, theSim);
     }
 
     private void putNode(double theWeight, Intersection theNode, ComparableIntersection thePrevNode,
@@ -245,26 +180,22 @@ public class Router {
         }
     }
 
-    private int[] iterateIntersectionPath(ComparableIntersection theIntersection) {
-        ArrayList<Integer> result = new ArrayList<>();
+    private Route iterateIntersectionPath(ComparableIntersection theIntersection) {
+        ArrayList<Intersection> path = new ArrayList<>();
         ComparableIntersection resultIterator = theIntersection;
         while (resultIterator.getPrev() != null) {
-            result.addFirst(resultIterator.myIntersection.getID());
+            path.addFirst(resultIterator.myIntersection);
             resultIterator = resultIterator.getPrev();
         }
-        result.addFirst(resultIterator.myIntersection.getID());
-        int[] intArray = new int[result.size()];
-        for (int i = 0; i < result.size(); i++) {
-            intArray[i] = result.get(i);
-        }
-        return intArray;
+        path.addFirst(resultIterator.myIntersection);
+        return new Route(path.toArray(new Intersection[0]));
     }
 
     /**
-     * Intersection to represent nodes so that we can store it in a queue for djikstras
+     * Specialized intersection to represent nodes so that we can store it in a queue for djikstras
      */
-    class ComparableIntersection implements Comparable<ComparableIntersection> {
-        private Intersection myIntersection;
+    private class ComparableIntersection implements Comparable<ComparableIntersection> {
+        private final Intersection myIntersection;
         private double myPathWeight;
         private ComparableIntersection myPrevNode;
 
@@ -277,7 +208,7 @@ public class Router {
         public Intersection getIntersection() { return myIntersection;}
         public double getPathWeight() {return myPathWeight;}
         public ComparableIntersection getPrev() {return myPrevNode;}
-//        public void setIntersection(Intersection theIntersection) {this.myIntersection = theIntersection;}
+//        public void setIntersection(Map.Intersection theIntersection) {this.myIntersection = theIntersection;}
         public void setPathWeight(double theNewWeight) {this.myPathWeight = theNewWeight;}
         public void setPrev(ComparableIntersection theNewNode) {this.myPrevNode = theNewNode;}
 

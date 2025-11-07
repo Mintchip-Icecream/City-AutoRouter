@@ -1,4 +1,5 @@
-import javax.smartcardio.Card;
+package Map;
+
 import java.util.ArrayList;
 
 public class Intersection {
@@ -23,14 +24,14 @@ public class Intersection {
         return myRoads;
     }
 
-    public Road connectIntersection(Intersection theOther, double theDistance, double theSpeedLimit, CardinalDirection theDirection) {
+    Road connectIntersection(Intersection theOther, double theDistance, double theSpeedLimit, CardinalDirection theDirection) {
         Road newRoad = new Road(this, theOther, theDistance, theSpeedLimit, theDirection);
         theOther.addRoad(newRoad);
         this.addRoad(newRoad);
         return newRoad;
     }
 
-    public void addRoad(Road theRoad) {
+    private void addRoad(Road theRoad) {
         myRoads.add(theRoad);
     }
 
@@ -42,7 +43,7 @@ public class Intersection {
         if (obj == null) { // check if null
             return false;
         }
-        if (!(obj instanceof Intersection)) { // check if an Intersection obj
+        if (!(obj instanceof Intersection)) { // check if an Map.Intersection obj
             return false;
         }
         Intersection otherIntersection = (Intersection) obj;
@@ -61,7 +62,7 @@ public class Intersection {
         if (myAccessibility) {
             sb.append("Location ");
         } else {
-            sb.append("Intersection ");
+            sb.append("Map.Intersection ");
         }
         sb.append(myId);
         sb.append(": [");
