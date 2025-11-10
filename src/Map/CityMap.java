@@ -3,8 +3,8 @@ package Map;
 import java.util.ArrayList;
 
 public class CityMap {
-    private ArrayList<Intersection> myIntersections = new ArrayList();
-    private ArrayList<Road> myRoads = new ArrayList();
+    private final ArrayList<Intersection> myIntersections = new ArrayList<>();
+    private final ArrayList<Road> myRoads = new ArrayList<>();
 
     // default constructor for empty map
     public CityMap() {
@@ -46,15 +46,6 @@ public class CityMap {
         }
     }
 
-    private void addIntersection(int isLocation1, int intersectionID) {
-        myIntersections.add(new Intersection(isLocation1 == 1, intersectionID));
-    }
-
-    private void addRoad(int intersection1, int intersection2, double theDistance, double theSpeedLimit, CardinalDirection theDirection){
-        Road newRoad = myIntersections.get(intersection1-1).connectIntersection(myIntersections.get(intersection2-1), theDistance, theSpeedLimit, theDirection);
-        myRoads.add(newRoad);
-    }
-
     public static Road getRoad(Intersection intersection1, Intersection intersection2) {
         for (Road r: intersection1.getRoadList()) {
             if (r.getDestination().equals(intersection2)) {
@@ -91,4 +82,14 @@ public class CityMap {
         }
         return sb.toString();
     }
+
+    private void addIntersection(int isLocation1, int intersectionID) {
+        myIntersections.add(new Intersection(isLocation1 == 1, intersectionID));
+    }
+
+    private void addRoad(int intersection1, int intersection2, double theDistance, double theSpeedLimit, CardinalDirection theDirection){
+        Road newRoad = myIntersections.get(intersection1-1).connectIntersection(myIntersections.get(intersection2-1), theDistance, theSpeedLimit, theDirection);
+        myRoads.add(newRoad);
+    }
+
 }

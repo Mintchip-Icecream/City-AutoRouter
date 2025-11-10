@@ -11,9 +11,14 @@ public class EnvironmentSimulator {
     private static final double LIGHT_BLOCKAGE = 0.333;
     private static final double LIGHT_WEATHER = 0.333;
     private static final double LIGHT_TRAFFIC = 0.333;
-    private static final boolean DEBUG_MODE = true;
+    private static final boolean DEBUG_MODE = false;
+    private static final double MINIMUM_CONDITION_COVERAGE = 0.1;
+    private static final double MAX_BLOCKAGE_COVERAGE = 0.5;
+    private static final double MAX_WEATHER_COVERAGE = 0.6;
+    private static final double MAX_TRAFFIC_COVERAGE = 0.6;
+    private static final double SEVERITY_BOUND = 0.7;
 
-    public EnvironmentSimulator(CityMap theMap, long theRNGSeed, double theThreshold) {
+    public EnvironmentSimulator(CityMap theMap, long theRNGSeed) {
         this.myMap = theMap;
         simulateConditions(theRNGSeed);
     }
@@ -32,6 +37,11 @@ public class EnvironmentSimulator {
         return defaultCondition;
     }
 
+    // checks if map is the same as the one this is initialized under
+    public boolean compareMap(CityMap theOther) {
+        return theOther.equals(myMap);
+    }
+
     public HashMap<Intersection, Conditions> getIntersectionConditions() {
         return myIntersections;
     }
@@ -39,7 +49,6 @@ public class EnvironmentSimulator {
     public HashMap<Road, Conditions> getRoadConditions() {
         return myRoads;
     }
-
 
     // principle of simulating: we randomly set the radius of effects (so if it's rainy in 1 edge, it should be
     // rainy for a few kilometers more)
@@ -63,15 +72,15 @@ public class EnvironmentSimulator {
         Random rand = new Random(theRNGSeed);
 
         if (DEBUG_MODE) {
-            System.out.println("Total Mileage of Map.Road: " + distance);
+            System.out.println("Total Mileage of Map: " + distance);
             System.out.println("Simulating Weather...");
         }
 
         // set the approximate distance we want to be affected by each condition, then run a simulation on the map for it
 
         // set weather parameters
-        double distanceAffectedByWeather = distance * rand.nextDouble(.1, .6);
-        simulateSingleCondition(rand, distanceAffectedByWeather, LIGHT_WEATHER, 0.7, weatherFactors);
+        double distanceAffectedByWeather = distance * rand.nextDouble(MINIMUM_CONDITION_COVERAGE, MAX_WEATHER_COVERAGE);
+        simulateSingleCondition(rand, distanceAffectedByWeather, LIGHT_WEATHER, SEVERITY_BOUND, weatherFactors);
         fillOutCondition(rand, weatherFactors, LIGHT_WEATHER);
 
         if (DEBUG_MODE) {
@@ -81,8 +90,8 @@ public class EnvironmentSimulator {
         }
 
         // set traffic parameters
-        double distanceAffectedByTraffic = distance * rand.nextDouble(.1, .6);
-        simulateSingleCondition(rand, distanceAffectedByTraffic, LIGHT_TRAFFIC, 0.7, trafficFactors);
+        double distanceAffectedByTraffic = distance * rand.nextDouble(MINIMUM_CONDITION_COVERAGE, MAX_TRAFFIC_COVERAGE);
+        simulateSingleCondition(rand, distanceAffectedByTraffic, LIGHT_TRAFFIC, SEVERITY_BOUND, trafficFactors);
         fillOutCondition(rand, trafficFactors, LIGHT_TRAFFIC);
 
         if (DEBUG_MODE) {
@@ -91,8 +100,8 @@ public class EnvironmentSimulator {
             System.out.println("Simulating obstacles...");
         }
 
-        double distanceAffectedByObstacles = distance * rand.nextDouble(.05, .5);
-        simulateSingleCondition(rand, distanceAffectedByObstacles, LIGHT_BLOCKAGE, 0.8, blockageFactors);
+        double distanceAffectedByObstacles = distance * rand.nextDouble(MINIMUM_CONDITION_COVERAGE, MAX_BLOCKAGE_COVERAGE);
+        simulateSingleCondition(rand, distanceAffectedByObstacles, LIGHT_BLOCKAGE, SEVERITY_BOUND, blockageFactors);
         fillOutCondition(rand, blockageFactors, LIGHT_BLOCKAGE);
 
         if (DEBUG_MODE) {
@@ -210,8 +219,11 @@ public class EnvironmentSimulator {
         while (!bfsQueue.isEmpty() && searchDistance < theRadius) {
             Intersection currEdge = bfsQueue.poll();
             double totalDistance = distanceFromOrigin(distances.get(currEdge));
-            // the line of code below could lead to a negative number, so set it to the absolute value
-            double decay  = Math.abs(1.0 - distanceFromOrigin(distances.get(currEdge))/theRadius);
+            // the line of code below could lead to a negative number, so set it to the absolute value or 0
+            double decay  = 1.0 - distanceFromOrigin(distances.get(currEdge))/theRadius;
+            if (decay <= 0) {
+                continue;
+            }
             addToCondition(currEdge, decay * theOriginCondition, theConditionMap);
             if (visited.get(currEdge) != null) {
                 searchDistance += myMap.getRoad(currEdge, visited.get(currEdge)).getLength();
@@ -240,15 +252,17 @@ public class EnvironmentSimulator {
     private double[] addCartesianDistances(Intersection theFrom, Intersection theTo, double[] distances) {
         Road r = CityMap.getRoad(theFrom, theTo);
         double[] result = distances.clone();
-        switch (r.getDirection(theFrom)) {
-            case NORTH: result[0] += r.getLength();
-                break;
-            case SOUTH: result[1] += r.getLength();
-                break;
-            case EAST: result[2] += r.getLength();
-                break;
-            case WEST: result[3] += r.getLength();
-                break;
+        if (r != null) {
+            switch (r.getDirection(theFrom)) {
+                case NORTH: result[0] += r.getLength();
+                    break;
+                case SOUTH: result[1] += r.getLength();
+                    break;
+                case EAST: result[2] += r.getLength();
+                    break;
+                case WEST: result[3] += r.getLength();
+                    break;
+            }
         }
         return result;
     }
@@ -259,7 +273,7 @@ public class EnvironmentSimulator {
         return Math.sqrt((theX*theX) + (theY*theY));
     }
 
-    boolean withinDistance(double theDistance, double theRadius) {
+    private boolean withinDistance(double theDistance, double theRadius) {
         return theDistance <= theRadius;
     }
 }

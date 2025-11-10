@@ -12,31 +12,6 @@ public class Router {
         this.myMap = theMap;
     }
 
-    public double routeLength(Route theRoute) {
-        double result = 0;
-        int[] routePath = theRoute.getRouteIDs();
-        for (int i = 1; i < routePath.length; i++) {
-            Road r = CityMap.getRoad(myMap.getIntersection(routePath[i-1]), myMap.getIntersection(routePath[i]));
-            if (r == null) {
-                return 0;
-            }
-            double time = r.getDefaultTime();
-            result += time;
-        }
-        return (double) Math.round(result*100)/100;
-    }
-
-    public double routeLength(Route theRoute, EnvironmentSimulator theSim) {
-        double result = 0;
-        int[] routePath = theRoute.getRouteIDs();
-        for (int i = 1; i < routePath.length; i++) {
-            Road r = CityMap.getRoad(myMap.getIntersection(routePath[i-1]), myMap.getIntersection(routePath[i]));
-            double time = SafetyChecker.roadTime(r, theSim);
-            result += time;
-        }
-        return (double) Math.round(result*100)/100;
-    }
-
     /**
      *
      * @param theStart
@@ -105,7 +80,15 @@ public class Router {
             }
             if (current.getIntersection().equals(theEnd)) { // terminating case if we pop off the target
                 return iterateIntersectionPath(current);
-            } // if we didn't land the target node, proceed as usual:
+            } // if we didn't land the target node, proceed as usual
+
+//             random print section for debugging
+//            System.out.println("Current: " + current.getIntersection().getID());
+//            System.out.print("[");
+//            for (ComparableIntersection cn : pq) {
+//                System.out.print(cn.getIntersection().getID() + " (" + cn.myPathWeight + "), ");
+//            }
+//            System.out.print("]\n");
 
             // compute through the neighbors, calculating distance for unvisited neighbors
             for (Road r : current.getIntersection().getRoadList()) { // get the intersections this is connected to
@@ -120,9 +103,8 @@ public class Router {
                 if (seenNode.containsKey(nonOriginNode)) { // check if we've already set the weight of this node
                     if (!closedNode.contains(seenNode.get(nonOriginNode))) { // if it's an already closed node, ignore
                         setPathWeight(pathTotal, nonOriginNode, current, pq, seenNode);
-                    } else {
-                        continue; // continue to next iteration if we're computing an already visited node
                     }
+                    continue;
                 }
                 // since this is a never-visited node, we'll add it to the queue along with it's data.
                 putNode(pathTotal, nonOriginNode, current, pq, seenNode);
@@ -173,9 +155,9 @@ public class Router {
                                PriorityQueue<ComparableIntersection> theQueue,
                                HashMap<Intersection, ComparableIntersection> theIntersectionList) {
         if (compareDouble(currentWeight,  theIntersectionList.get(node).myPathWeight) == -1) { // check if our path is more optimal
+            theQueue.remove(theIntersectionList.get(node));
             theIntersectionList.get(node).setPathWeight(currentWeight); // edit this node with new path
             theIntersectionList.get(node).setPrev(prevNode);
-            theQueue.remove(theIntersectionList.get(node));
             theQueue.add(theIntersectionList.get(node));
         }
     }
@@ -214,7 +196,7 @@ public class Router {
 
         @Override
         public int compareTo(ComparableIntersection o) {
-            return Double.compare(myPathWeight, o.getPathWeight());
+            return compareDouble(myPathWeight, o.getPathWeight());
         }
     }
 
