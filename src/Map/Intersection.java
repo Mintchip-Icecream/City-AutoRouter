@@ -3,9 +3,9 @@ package Map;
 import java.util.ArrayList;
 
 public class Intersection {
-    private int myId;
-    private ArrayList<Road> myRoads = new ArrayList<>(4); // we assume that intersections are connected to at most 4 roads
-    private boolean myAccessibility;
+    private final int myId;
+    private final ArrayList<Road> myRoads = new ArrayList<>(4); // we assume that intersections are connected to at most 4 roads
+    private final boolean myAccessibility;
 
     public Intersection(boolean isLocation1, int theID) {
         this.myId = theID;
@@ -20,8 +20,8 @@ public class Intersection {
         return myAccessibility;
     }
 
-    public ArrayList<Road> getRoadList() {
-        return myRoads;
+    public Road[] getRoadList() {
+        return myRoads.toArray(new Road[0]);
     }
 
     Road connectIntersection(Intersection theOther, double theDistance, double theSpeedLimit, CardinalDirection theDirection) {
@@ -73,9 +73,6 @@ public class Intersection {
                 sb.append(r.getDestination().getID());
 
             }
-//            sb.append("(");
-//            sb.append(r.getDefaultTime());
-//            sb.append(" mins), ");
             sb.append(", ");
         }
         sb.deleteCharAt(sb.length()-1);

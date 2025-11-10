@@ -1,17 +1,17 @@
 package Simulation;
 
 public class Conditions {
-    private double weatherFactor;
-    private double blockageSeverity;
-    private double trafficDensity;
+    private final double weatherFactor;
+    private final double blockageSeverity;
+    private final double trafficDensity;
 
     public Conditions(double weatherRisk, double blockageRisk, double trafficDensity) {
-        if (weatherRisk > 1 || weatherRisk < 0) {
-            throw new IllegalArgumentException("All input data must be between 0 to 1");
-        } else if (blockageRisk > 1 || blockageRisk < 0) {
-            throw new IllegalArgumentException("All input data must be between 0 to 1");
-        } else if (trafficDensity > 1 || trafficDensity < 0) {
-            throw new IllegalArgumentException("All input data must be between 0 to 1");
+        if (weatherRisk > 1.0 || weatherRisk < 0) {
+            throw new IllegalArgumentException("All input dataw must be between 0 to 1");
+        } else if (blockageRisk > 1.0 || blockageRisk < 0) {
+            throw new IllegalArgumentException("All input datab must be between 0 to 1");
+        } else if (trafficDensity > 1.0 || trafficDensity < 0) {
+            throw new IllegalArgumentException("All input datal must be between 0 to 1");
         }
         this.weatherFactor = weatherRisk;
         this.blockageSeverity = blockageRisk;
