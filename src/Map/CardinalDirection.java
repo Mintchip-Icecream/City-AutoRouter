@@ -6,7 +6,7 @@ public enum CardinalDirection {
     EAST,
     WEST;
 
-    public static Direction turnDirection(CardinalDirection theStart, CardinalDirection theEnd) {
+    public static Direction turnDirection(final CardinalDirection theStart, final CardinalDirection theEnd) {
         return switch (theStart) {
             case NORTH -> switch (theEnd) {
                 case NORTH -> Direction.FORWARD;
@@ -35,7 +35,7 @@ public enum CardinalDirection {
         };
     }
 
-    public static CardinalDirection swapDirection(CardinalDirection theDirection) {
+    public static CardinalDirection swapDirection(final CardinalDirection theDirection) {
         return switch (theDirection) {
             case NORTH -> SOUTH;
             case SOUTH -> NORTH;

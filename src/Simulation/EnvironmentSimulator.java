@@ -11,14 +11,14 @@ public class EnvironmentSimulator {
     private static final double LIGHT_BLOCKAGE = 0.333;
     private static final double LIGHT_WEATHER = 0.333;
     private static final double LIGHT_TRAFFIC = 0.333;
-    private static final boolean DEBUG_MODE = false;
+    private static final boolean DEBUG_MODE = true;
     private static final double MINIMUM_CONDITION_COVERAGE = 0.1;
     private static final double MAX_BLOCKAGE_COVERAGE = 0.5;
     private static final double MAX_WEATHER_COVERAGE = 0.6;
     private static final double MAX_TRAFFIC_COVERAGE = 0.6;
     private static final double SEVERITY_BOUND = 0.7;
 
-    public EnvironmentSimulator(CityMap theMap, long theRNGSeed) {
+    public EnvironmentSimulator(final CityMap theMap, final long theRNGSeed) {
         this.myMap = theMap;
         simulateConditions(theRNGSeed);
     }
@@ -222,11 +222,11 @@ public class EnvironmentSimulator {
             // the line of code below could lead to a negative number, so set it to the absolute value or 0
             double decay  = 1.0 - distanceFromOrigin(distances.get(currEdge))/theRadius;
             if (decay <= 0) {
-                continue;
+                decay = 0.01;
             }
             addToCondition(currEdge, decay * theOriginCondition, theConditionMap);
             if (visited.get(currEdge) != null) {
-                searchDistance += myMap.getRoad(currEdge, visited.get(currEdge)).getLength();
+                searchDistance += CityMap.getRoad(currEdge, visited.get(currEdge)).getLength();
             }
 
             if (withinDistance(totalDistance, theRadius)) {

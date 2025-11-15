@@ -12,7 +12,7 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         CityMap newCM = new CityMap(Files.readString(Path.of(fileName)));
-        EnvironmentSimulator em = new EnvironmentSimulator(newCM, 300L);
+        EnvironmentSimulator em = new EnvironmentSimulator(newCM, 255L);
         Model car = new Model(newCM, em);
         int startID = 1;
         int endID = 35;

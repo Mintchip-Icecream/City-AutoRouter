@@ -1,13 +1,15 @@
 package Map;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Objects;
 
 public class Intersection {
     private final int myId;
     private final ArrayList<Road> myRoads = new ArrayList<>(4); // we assume that intersections are connected to at most 4 roads
     private final boolean myAccessibility;
 
-    public Intersection(boolean isLocation1, int theID) {
+    public Intersection(final boolean isLocation1, final int theID) {
         this.myId = theID;
         this.myAccessibility = isLocation1;
     }
@@ -24,36 +26,27 @@ public class Intersection {
         return myRoads.toArray(new Road[0]);
     }
 
-    Road connectIntersection(Intersection theOther, double theDistance, double theSpeedLimit, CardinalDirection theDirection) {
-        Road newRoad = new Road(this, theOther, theDistance, theSpeedLimit, theDirection);
-        theOther.addRoad(newRoad);
-        this.addRoad(newRoad);
-        return newRoad;
-    }
-
-    private void addRoad(Road theRoad) {
-        myRoads.add(theRoad);
-    }
-
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) { // compare memory location
+    public boolean equals(final Object theObj) {
+        if (this == theObj) { // compare memory location
             return true;
         }
-        if (obj == null) { // check if null
+        if (theObj == null) { // check if null
             return false;
         }
-        if (!(obj instanceof Intersection)) { // check if an Map.Intersection obj
+        if (!(theObj instanceof Intersection otherIntersection)) { // check if same class
             return false;
         }
-        Intersection otherIntersection = (Intersection) obj;
+        if (this.hashCode() != theObj.hashCode()) {
+            return false;
+        }
         if (otherIntersection.getID() != myId) { // check if it has same ID
             return false;
         }
         if (otherIntersection.isLocation() != myAccessibility) { // check if it's also a location or not
             return false;
         }
-        return myRoads.equals(otherIntersection.getRoadList()); // check if roads are equivalent
+        return Arrays.equals(getRoadList(), otherIntersection.getRoadList());
     }
 
     @Override
@@ -75,9 +68,26 @@ public class Intersection {
             }
             sb.append(", ");
         }
-        sb.deleteCharAt(sb.length()-1);
-        sb.deleteCharAt(sb.length()-1);
+        sb.deleteCharAt(sb.length() - 1);
+        sb.deleteCharAt(sb.length() - 1);
         sb.append("]");
         return sb.toString();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(myId, myRoads.size(), myAccessibility);
+    }
+
+    Road connectIntersection(final Intersection theOther, final double theDistance,
+                             final double theSpeedLimit, final CardinalDirection theDirection) {
+        Road newRoad = new Road(this, theOther, theDistance, theSpeedLimit, theDirection);
+        theOther.addRoad(newRoad);
+        this.addRoad(newRoad);
+        return newRoad;
+    }
+
+    private void addRoad(final Road theRoad) {
+        myRoads.add(theRoad);
     }
 }
