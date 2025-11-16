@@ -1,16 +1,27 @@
 package Routing;
 
-import java.util.*;
-import Map.*;
-import Simulation.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.PriorityQueue;
 
+import Map.Intersection;
+import Map.Road;
+
+import Simulation.EnvironmentSimulator;
+import Simulation.SafetyChecker;
+
+/**
+ * Class implementing Djikstra's algorithm to compute the optimal route from the starting intersection
+ * to the destination intersection, either with or without an environmental simulation.
+ *
+ * @author June Flores
+ * @version 11/15/25
+ */
 public class Router {
-    CityMap myMap;
     private static final double DOUBLE_EPSILON = 0.0005;
 
-    public Router(CityMap theMap) {
-        this.myMap = theMap;
-    }
+    public Router() { }
 
     /**
      *
@@ -18,8 +29,7 @@ public class Router {
      * @param theEnd
      * @return null if we cannot compute route, route as a series of intersection IDs
      */
-    public Route computeRoute(Intersection theStart, Intersection theEnd) {
-
+    public Route computeRoute(final Intersection theStart, final Intersection theEnd) {
         // initialize our necessary data structures
         PriorityQueue<ComparableIntersection> pq = new PriorityQueue<>(); // for adding new nodes
         HashMap<Intersection, ComparableIntersection> seenNode = new HashMap<>(); // also for adding new nodes
@@ -57,8 +67,8 @@ public class Router {
         return null;
     }
 
-    public Route computeRoute(Intersection theStart, Intersection theEnd,
-                              double theThreshold, EnvironmentSimulator theSim) {
+    public Route computeRoute(final Intersection theStart, final Intersection theEnd,
+                              final double theThreshold, final EnvironmentSimulator theSim) {
 
         PriorityQueue<ComparableIntersection> pq = new PriorityQueue<>(); // for adding new nodes
         HashMap<Intersection, ComparableIntersection> seenNode = new HashMap<>(); // also for adding new nodes
@@ -117,7 +127,7 @@ public class Router {
     }
 
     // returns 1 if num1 > num2, -1 if num1 < num2, and 0 if equal
-    private int compareDouble(double num1, double num2) {
+    private int compareDouble(final double num1, final double num2) {
         if (Math.abs(num1 - num2) < DOUBLE_EPSILON) {
             return 0;
         }
@@ -127,42 +137,44 @@ public class Router {
         return -1;
     }
 
-    private double pathWeight(ComparableIntersection thePrevNode, double theRoadTime) {
+    private double pathWeight(final ComparableIntersection thePrevNode, final double theRoadTime) {
         return thePrevNode.getPathWeight() + theRoadTime;
     }
 
 
-    private double pathWeight(ComparableIntersection thePrevNode, Road theRoad, EnvironmentSimulator theSim) {
+    private double pathWeight(final ComparableIntersection thePrevNode, final Road theRoad,
+                              final EnvironmentSimulator theSim) {
         return thePrevNode.getPathWeight() + SafetyChecker.roadTime(theRoad, theSim);
     }
 
-    private void putNode(double theWeight, Intersection theNode, ComparableIntersection thePrevNode,
-                         PriorityQueue<ComparableIntersection> theQueue,
-                         HashMap<Intersection, ComparableIntersection> theIntersectionList) {
+    private void putNode(final double theWeight, final Intersection theNode, final ComparableIntersection thePrevNode,
+                         final PriorityQueue<ComparableIntersection> theQueue,
+                         final HashMap<Intersection, ComparableIntersection> theIntersectionList) {
         ComparableIntersection newNode = new ComparableIntersection(theNode, theWeight, thePrevNode);
         theIntersectionList.put(theNode, newNode);
         theQueue.add(newNode);
     }
 
-    private Intersection getNonOriginNode(Road theRoad, Intersection theOrigin) {
+    private Intersection getNonOriginNode(final Road theRoad, final Intersection theOrigin) {
         if (!theRoad.getSource().equals(theOrigin)) {
             return theRoad.getSource();
         }
         return theRoad.getDestination();
     }
 
-    private void setPathWeight(double currentWeight, Intersection node, ComparableIntersection prevNode,
-                               PriorityQueue<ComparableIntersection> theQueue,
-                               HashMap<Intersection, ComparableIntersection> theIntersectionList) {
-        if (compareDouble(currentWeight,  theIntersectionList.get(node).myPathWeight) == -1) { // check if our path is more optimal
-            theQueue.remove(theIntersectionList.get(node));
-            theIntersectionList.get(node).setPathWeight(currentWeight); // edit this node with new path
-            theIntersectionList.get(node).setPrev(prevNode);
-            theQueue.add(theIntersectionList.get(node));
+    private void setPathWeight(final double theWeight, final Intersection theCurrent,
+                               final ComparableIntersection thePrevNode,
+                               final PriorityQueue<ComparableIntersection> theQueue,
+                               final HashMap<Intersection, ComparableIntersection> theIntersectionList) {
+        if (compareDouble(theWeight,  theIntersectionList.get(theCurrent).myPathWeight) == -1) { // check if our path is more optimal
+            theQueue.remove(theIntersectionList.get(theCurrent));
+            theIntersectionList.get(theCurrent).setPathWeight(theWeight); // edit this node with new path
+            theIntersectionList.get(theCurrent).setPrev(thePrevNode);
+            theQueue.add(theIntersectionList.get(theCurrent));
         }
     }
 
-    private Route iterateIntersectionPath(ComparableIntersection theIntersection) {
+    private Route iterateIntersectionPath(final ComparableIntersection theIntersection) {
         ArrayList<Intersection> path = new ArrayList<>();
         ComparableIntersection resultIterator = theIntersection;
         while (resultIterator.getPrev() != null) {
@@ -174,29 +186,43 @@ public class Router {
     }
 
     /**
-     * Specialized intersection to represent nodes so that we can store it in a queue for djikstras
+     * Specialized intersection to represent nodes so that we can store it in a queue for djikstras.
      */
-    private class ComparableIntersection implements Comparable<ComparableIntersection> {
+    private final class ComparableIntersection implements Comparable<ComparableIntersection> {
         private final Intersection myIntersection;
         private double myPathWeight;
         private ComparableIntersection myPrevNode;
 
-        public ComparableIntersection(Intersection theIntersection, double thePathWeight, ComparableIntersection thePrevNode) {
+        private ComparableIntersection(final Intersection theIntersection, final double thePathWeight,
+                                      final ComparableIntersection thePrevNode) {
             this.myIntersection = theIntersection;
             this.myPathWeight = thePathWeight;
             this.myPrevNode = thePrevNode;
         }
+        private Intersection getIntersection() {
+            return myIntersection;
+        }
+        private double getPathWeight() {
+            return myPathWeight;
+        }
+        private ComparableIntersection getPrev() {
+            return myPrevNode;
+        }
+        private void setPathWeight(final double theNewWeight) {
+            this.myPathWeight = theNewWeight;
+        }
+        private void setPrev(final ComparableIntersection theNewNode) {
+            this.myPrevNode = theNewNode;
+        }
 
-        public Intersection getIntersection() { return myIntersection;}
-        public double getPathWeight() {return myPathWeight;}
-        public ComparableIntersection getPrev() {return myPrevNode;}
-//        public void setIntersection(Map.Intersection theIntersection) {this.myIntersection = theIntersection;}
-        public void setPathWeight(double theNewWeight) {this.myPathWeight = theNewWeight;}
-        public void setPrev(ComparableIntersection theNewNode) {this.myPrevNode = theNewNode;}
-
+        /**
+         * This class has a natural ordering inconsistent with "equals", it's ordered based on the intersection's weight.
+         * @param theOther the object to be compared.
+         * @return
+         */
         @Override
-        public int compareTo(ComparableIntersection o) {
-            return compareDouble(myPathWeight, o.getPathWeight());
+        public int compareTo(final ComparableIntersection theOther) {
+            return compareDouble(myPathWeight, theOther.getPathWeight());
         }
     }
 
