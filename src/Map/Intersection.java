@@ -4,6 +4,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 
+/**
+ * Data type representing a node on the CityMap graph, or an intersection on a road in real life terms.
+ * Intersections store their node ID, an adjacency list consisting of the roads connecting them to other roads,
+ * and a bool of whether they're a location and can be set as the start of a route.
+ *
+ * @author June Flores
+ * @version 11/15/25
+ */
 public class Intersection {
     private final int myId;
     private final ArrayList<Road> myRoads = new ArrayList<>(4); // we assume that intersections are connected to at most 4 roads
@@ -14,15 +22,15 @@ public class Intersection {
         this.myAccessibility = isLocation1;
     }
 
-    public int getID() {
+    public final int getID() {
         return myId;
     }
 
-    public boolean isLocation() {
+    public final boolean isLocation() {
         return myAccessibility;
     }
 
-    public Road[] getRoadList() {
+    public final Road[] getRoadList() {
         return myRoads.toArray(new Road[0]);
     }
 

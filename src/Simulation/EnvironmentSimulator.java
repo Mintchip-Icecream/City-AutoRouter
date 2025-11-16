@@ -1,75 +1,98 @@
 package Simulation;
 
-import java.util.*;
-import Map.*;
+import Map.CityMap;
+import Map.Intersection;
+import Map.Road;
 
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Random;
+
+/**
+ * Class that applies conditions and risk levels to the intersections and roads of a map. Works by simulating
+ * "problem areas" of certain conditions such as weather, obstacles, and traffic, and assigns a set of conditions to
+ * each intersection and road on the map.
+ *
+ * @author June Flores
+ * @version 11/15/25
+ */
 public class EnvironmentSimulator {
-    private final CityMap myMap;
-    private final HashMap<Intersection, Conditions> myIntersections = new HashMap<>();
-    private final HashMap<Road,Conditions> myRoads = new HashMap<>();
-    private static final Conditions defaultCondition = new Conditions(0, 0, 0);
+    private static final boolean DEBUG_MODE = true;
+    private static final Conditions DEFAULT_CONDITION = new Conditions(0, 0, 0);
     private static final double LIGHT_BLOCKAGE = 0.333;
     private static final double LIGHT_WEATHER = 0.333;
     private static final double LIGHT_TRAFFIC = 0.333;
-    private static final boolean DEBUG_MODE = true;
     private static final double MINIMUM_CONDITION_COVERAGE = 0.1;
     private static final double MAX_BLOCKAGE_COVERAGE = 0.5;
     private static final double MAX_WEATHER_COVERAGE = 0.6;
     private static final double MAX_TRAFFIC_COVERAGE = 0.6;
     private static final double SEVERITY_BOUND = 0.7;
+    private static final double MINIMUM_DECAY_MULTIPLIER = 0.001;
+    private static final int OBJECTS_PER_LINE_PRINT = 3;
+    private static final int DECIMAL_TO_PERCENT = 100;
+    private static final int NORTH_DISTANCE_INDEX = 0;
+    private static final int SOUTH_DISTANCE_INDEX = 1;
+    private static final int EAST_DISTANCE_INDEX = 2;
+    private static final int WEST_DISTANCE_INDEX = 3;
+    private final CityMap myMap;
+    private final HashMap<Intersection, Conditions> myIntersections = new HashMap<>();
+    private final HashMap<Road, Conditions> myRoads = new HashMap<>();
+    private final Random myRand;
 
     public EnvironmentSimulator(final CityMap theMap, final long theRNGSeed) {
         this.myMap = theMap;
-        simulateConditions(theRNGSeed);
+        this.myRand = new Random(theRNGSeed);
+        simulateConditions();
     }
 
-    public Conditions getCondition(Intersection theIntersection) {
+    public final Conditions getCondition(final Intersection theIntersection) {
         if (myIntersections.containsKey(theIntersection)) {
             return myIntersections.get(theIntersection);
         }
-        return defaultCondition;
+        return DEFAULT_CONDITION;
     }
 
-    public Conditions getCondition(Road theRoad) {
+    public final Conditions getCondition(final Road theRoad) {
         if (myRoads.containsKey(theRoad)) {
             return myRoads.get(theRoad);
         }
-        return defaultCondition;
+        return DEFAULT_CONDITION;
     }
 
     // checks if map is the same as the one this is initialized under
-    public boolean compareMap(CityMap theOther) {
+    public final boolean compareMap(final CityMap theOther) {
         return theOther.equals(myMap);
     }
 
-    public HashMap<Intersection, Conditions> getIntersectionConditions() {
-        return myIntersections;
+    public final HashMap<Intersection, Conditions> getIntersectionConditions() {
+        return new HashMap<>(myIntersections);
     }
 
-    public HashMap<Road, Conditions> getRoadConditions() {
-        return myRoads;
+    public final HashMap<Road, Conditions> getRoadConditions() {
+        return new HashMap<>(myRoads);
     }
 
-    // principle of simulating: we randomly set the radius of effects (so if it's rainy in 1 edge, it should be
-    // rainy for a few kilometers more)
 
-    private void applyCondition(Intersection inter1, double theWeather, double theBlockage, double theTraffic) {
+    private void applyCondition(final Intersection inter1, final double theWeather,
+                                final double theBlockage, final double theTraffic) {
         Conditions newCon = new Conditions(theWeather, theBlockage, theTraffic);
         myIntersections.put(inter1, newCon);
     }
 
-    private void applyCondition(Road road1, double theWeather, double theBlockage, double theTraffic) {
+    private void applyCondition(final Road road1, final double theWeather,
+                                final double theBlockage, final double theTraffic) {
         Conditions newCon = new Conditions(theWeather, theBlockage, theTraffic);
         myRoads.put(road1, newCon);
     }
 
-
-    private void simulateConditions(long theRNGSeed) {
+    // principle of simulating: we randomly set the radius of effects (so if it's rainy in 1 edge, it should be
+    // rainy for a few kilometers more)
+    private void simulateConditions() {
         HashMap<Intersection, Double> weatherFactors = new HashMap<>();
         HashMap<Intersection, Double> blockageFactors = new HashMap<>();
         HashMap<Intersection, Double> trafficFactors = new HashMap<>();
         double distance = totalMapDistance(); // we want at last 1/3 of the map to have fairly extreme
-        Random rand = new Random(theRNGSeed);
 
         if (DEBUG_MODE) {
             System.out.println("Total Mileage of Map: " + distance);
@@ -79,9 +102,9 @@ public class EnvironmentSimulator {
         // set the approximate distance we want to be affected by each condition, then run a simulation on the map for it
 
         // set weather parameters
-        double distanceAffectedByWeather = distance * rand.nextDouble(MINIMUM_CONDITION_COVERAGE, MAX_WEATHER_COVERAGE);
-        simulateSingleCondition(rand, distanceAffectedByWeather, LIGHT_WEATHER, SEVERITY_BOUND, weatherFactors);
-        fillOutCondition(rand, weatherFactors, LIGHT_WEATHER);
+        double distanceAffectedByWeather = distance * myRand.nextDouble(MINIMUM_CONDITION_COVERAGE, MAX_WEATHER_COVERAGE);
+        simulateSingleCondition(distanceAffectedByWeather, LIGHT_WEATHER, SEVERITY_BOUND, weatherFactors);
+        fillOutCondition(weatherFactors, LIGHT_WEATHER);
 
         if (DEBUG_MODE) {
             System.out.println("Printing Weather Simulation.Conditions for all locations and intersections:");
@@ -90,9 +113,9 @@ public class EnvironmentSimulator {
         }
 
         // set traffic parameters
-        double distanceAffectedByTraffic = distance * rand.nextDouble(MINIMUM_CONDITION_COVERAGE, MAX_TRAFFIC_COVERAGE);
-        simulateSingleCondition(rand, distanceAffectedByTraffic, LIGHT_TRAFFIC, SEVERITY_BOUND, trafficFactors);
-        fillOutCondition(rand, trafficFactors, LIGHT_TRAFFIC);
+        double distanceAffectedByTraffic = distance * myRand.nextDouble(MINIMUM_CONDITION_COVERAGE, MAX_TRAFFIC_COVERAGE);
+        simulateSingleCondition(distanceAffectedByTraffic, LIGHT_TRAFFIC, SEVERITY_BOUND, trafficFactors);
+        fillOutCondition(trafficFactors, LIGHT_TRAFFIC);
 
         if (DEBUG_MODE) {
             System.out.println("Printing Traffic Simulation.Conditions for all locations and intersections:");
@@ -100,9 +123,9 @@ public class EnvironmentSimulator {
             System.out.println("Simulating obstacles...");
         }
 
-        double distanceAffectedByObstacles = distance * rand.nextDouble(MINIMUM_CONDITION_COVERAGE, MAX_BLOCKAGE_COVERAGE);
-        simulateSingleCondition(rand, distanceAffectedByObstacles, LIGHT_BLOCKAGE, SEVERITY_BOUND, blockageFactors);
-        fillOutCondition(rand, blockageFactors, LIGHT_BLOCKAGE);
+        double distanceAffectedByObstacles = distance * myRand.nextDouble(MINIMUM_CONDITION_COVERAGE, MAX_BLOCKAGE_COVERAGE);
+        simulateSingleCondition(distanceAffectedByObstacles, LIGHT_BLOCKAGE, SEVERITY_BOUND, blockageFactors);
+        fillOutCondition(blockageFactors, LIGHT_BLOCKAGE);
 
         if (DEBUG_MODE) {
             System.out.println("Printing Obstacle Simulation.Conditions for all locations and intersections:");
@@ -114,19 +137,20 @@ public class EnvironmentSimulator {
 
     }
 
-    private void printMap(HashMap<Intersection, Double> theConditionMap) {
+    private void printMap(final HashMap<Intersection, Double> theConditionMap) {
         int counter = 0;
         for (Intersection i: myMap.getAllIntersections()) {
-            if ((counter % 3) == 0) {
+            if ((counter % OBJECTS_PER_LINE_PRINT) == 0) {
                 System.out.println();
             } else {
                 System.out.print(" ");
             }
-            System.out.print("(" + i.getID() + ", " + ((double)Math.round(theConditionMap.get(i)*100)/100) + ")");
+            System.out.print("(" + i.getID() + ", " + (Math.round(theConditionMap.get(i) * DECIMAL_TO_PERCENT)) + "%)");
             counter++;
         }
         System.out.println("\n");
     }
+
 
     private double totalMapDistance() {
         double result = 0;
@@ -136,44 +160,43 @@ public class EnvironmentSimulator {
         return result;
     }
 
-    private void setAllConditions(HashMap<Intersection, Double> theWeather, HashMap<Intersection, Double> theObstacles,
-                                  HashMap<Intersection, Double> theTraffic) {
+    private void setAllConditions(final HashMap<Intersection, Double> theWeather,
+                                  final HashMap<Intersection, Double> theObstacles,
+                                  final HashMap<Intersection, Double> theTraffic) {
         for (Intersection i: myMap.getAllIntersections()) {
             applyCondition(i, theWeather.get(i), theObstacles.get(i), theTraffic.get(i));
         }
         for (Road r: myMap.getAllRoads()) {
             Intersection source = r.getSource();
             Intersection dest = r.getDestination();
-            double weatherFactor = (theWeather.get(source) + theWeather.get(dest))/2;
-            double blockageFactor = (theObstacles.get(source) + theObstacles.get(dest))/2;
-            double trafficFactor = (theTraffic.get(source) + theTraffic.get(dest))/2;
+            double weatherFactor = (theWeather.get(source) + theWeather.get(dest)) / 2;
+            double blockageFactor = (theObstacles.get(source) + theObstacles.get(dest)) / 2;
+            double trafficFactor = (theTraffic.get(source) + theTraffic.get(dest)) / 2;
             applyCondition(r, weatherFactor, blockageFactor, trafficFactor);
         }
     }
 
-    // simulate the weather by randomly choosing intersections to start simulating weather
-    // then travel a random radius around that intersection (which could be estimated)
-    private void simulateSingleCondition(Random theRand, double theDistance, double theConditionOrigin,
-                                 double theConditionBound, HashMap<Intersection, Double> ConditionMap) {
-        /**
-         * idea for process: select random intersection as the epicenter of a weather cluster and a random radius
-         * then traverse around the radius until either the limit, which is theDistance, is reached, or we've traversed
-         * all of the points using BFS around that road. when traversing to a road, we'll set the weather based on the
-         * random weather factor of the road, and if there's conflicts (we've already set the weather factor), then we'll
-         * add to the weather factor
-         */
+    /**
+     * idea for process: select random intersection as the epicenter of a condition cluster and a random radius
+     * then traverse around the radius until either the limit, which is theDistance, is reached, or we've traversed
+     * all of the points using BFS around that road. when traversing to a road, we'll set the condition based on the
+     * random factor of the road, and if there's conflicts (we've already set the weather factor), then we'll
+     * add to the weather factor
+     */
+    private void simulateSingleCondition(final double theDistance, final double theConditionOrigin,
+                                 final double theConditionBound, final HashMap<Intersection, Double> theConditions) {
         double distanceTraversed = 0;
         Intersection[] interList = myMap.getAllIntersections();
         int problemZonesCreated = 0;
 
         while (distanceTraversed < theDistance) {
             // set up the epicenter of the condition event, don't set the condition to be too close to 1, it can still get to 1 other ways
-            Intersection epicenter = interList[theRand.nextInt(0, interList.length)];
-            double epiCondition = theRand.nextDouble(theConditionOrigin, theConditionBound); // mild to pretty severe weather at the center
+            Intersection epicenter = interList[myRand.nextInt(0, interList.length)];
+            double epiCondition = myRand.nextDouble(theConditionOrigin, theConditionBound); // mild to pretty severe weather at the center
             // we want to affect everything within this radius
-            double radius = theRand.nextDouble(0, theDistance-(distanceTraversed));
+            double radius = myRand.nextDouble(0, theDistance - (distanceTraversed));
 
-            double searchDistance = makeConditionCluster(radius, epicenter, epiCondition, ConditionMap);
+            double searchDistance = makeConditionCluster(radius, epicenter, epiCondition, theConditions);
             distanceTraversed += searchDistance;
             problemZonesCreated++;
             if (DEBUG_MODE) {
@@ -182,19 +205,21 @@ public class EnvironmentSimulator {
         }
         if (DEBUG_MODE) {
             System.out.println("Problem zones created: " + problemZonesCreated);
-            System.out.println("Distance Traveled While Simulating Condition: " + distanceTraversed + ", Distance Threshold: " + theDistance);
+            System.out.println("Distance Traveled While Simulating Condition: " + distanceTraversed
+                    + ", Distance Threshold: " + theDistance);
         }
     }
 
-    private void fillOutCondition(Random theRand, HashMap<Intersection, Double> theMap, double theBound) {
+    private void fillOutCondition(final HashMap<Intersection, Double> theMap, final double theBound) {
         for (Intersection i : myMap.getAllIntersections()) {
             if (!theMap.containsKey(i)) {
-                theMap.put(i, theRand.nextDouble(theBound));
+                theMap.put(i, myRand.nextDouble(theBound));
             }
         }
     }
 
-    private void addToCondition(Intersection inter1, double theAmount, HashMap<Intersection, Double> theMap) {
+    private void addToCondition(final Intersection inter1, final double theAmount,
+                                final HashMap<Intersection, Double> theMap) {
         if (theMap.containsKey(inter1)) {
             theMap.put(inter1, theMap.get(inter1) * (1 + theAmount));
             if (theMap.get(inter1) >= 1) {
@@ -205,8 +230,9 @@ public class EnvironmentSimulator {
         }
     }
 
-    private double makeConditionCluster(double theRadius, Intersection theOrigin, double theOriginCondition,
-                                        HashMap<Intersection, Double> theConditionMap) {
+    private double makeConditionCluster(final double theRadius, final Intersection theOrigin,
+                                        final double theOriginCondition,
+                                        final HashMap<Intersection, Double> theConditionMap) {
         // set up our bfs from the origin
         Queue<Intersection> bfsQueue =  new LinkedList<>();
         HashMap<Intersection, double[]> distances = new HashMap<>();
@@ -220,9 +246,9 @@ public class EnvironmentSimulator {
             Intersection currEdge = bfsQueue.poll();
             double totalDistance = distanceFromOrigin(distances.get(currEdge));
             // the line of code below could lead to a negative number, so set it to the absolute value or 0
-            double decay  = 1.0 - distanceFromOrigin(distances.get(currEdge))/theRadius;
+            double decay  = 1.0 - distanceFromOrigin(distances.get(currEdge)) / theRadius;
             if (decay <= 0) {
-                decay = 0.01;
+                decay = MINIMUM_DECAY_MULTIPLIER;
             }
             addToCondition(currEdge, decay * theOriginCondition, theConditionMap);
             if (visited.get(currEdge) != null) {
@@ -249,31 +275,33 @@ public class EnvironmentSimulator {
 
 
     // get the distance matrix [North, South, East, West] of an intersection using previous distance matrix
-    private double[] addCartesianDistances(Intersection theFrom, Intersection theTo, double[] distances) {
+    private double[] addCartesianDistances(final Intersection theFrom, final Intersection theTo,
+                                           final double[] distances) {
         Road r = CityMap.getRoad(theFrom, theTo);
         double[] result = distances.clone();
         if (r != null) {
             switch (r.getDirection(theFrom)) {
-                case NORTH: result[0] += r.getLength();
+                case NORTH: result[NORTH_DISTANCE_INDEX] += r.getLength();
                     break;
-                case SOUTH: result[1] += r.getLength();
+                case SOUTH: result[SOUTH_DISTANCE_INDEX] += r.getLength();
                     break;
-                case EAST: result[2] += r.getLength();
+                case EAST: result[EAST_DISTANCE_INDEX] += r.getLength();
                     break;
-                case WEST: result[3] += r.getLength();
+                case WEST: result[WEST_DISTANCE_INDEX] += r.getLength();
                     break;
+                default: break;
             }
         }
         return result;
     }
 
-    private double distanceFromOrigin(double[] theDistances) {
-        double theX = Math.abs(theDistances[0] - theDistances[1]);
-        double theY = Math.abs(theDistances[2] - theDistances[3]);
-        return Math.sqrt((theX*theX) + (theY*theY));
+    private double distanceFromOrigin(final double[] theDistances) {
+        double theX = Math.abs(theDistances[NORTH_DISTANCE_INDEX] - theDistances[SOUTH_DISTANCE_INDEX]);
+        double theY = Math.abs(theDistances[EAST_DISTANCE_INDEX] - theDistances[WEST_DISTANCE_INDEX]);
+        return Math.sqrt((theX * theX) + (theY * theY));
     }
 
-    private boolean withinDistance(double theDistance, double theRadius) {
+    private boolean withinDistance(final double theDistance, final double theRadius) {
         return theDistance <= theRadius;
     }
 }

@@ -2,6 +2,13 @@ package Map;
 
 import java.util.Objects;
 
+/**
+ * Data type representing a weighted edge on the CityMap graph, or a road between two intersections in plain terms.
+ * Roads contain the intersections they're connected to, along with the attributes of the road, such as speed limit,
+ * distance, and direction.
+ *
+ * @author June Flores
+ */
 public class Road {
     private static final int METERS_IN_KILOMETER = 1000;
     private static final int MINUTES_IN_HOUR = 60;
@@ -12,33 +19,36 @@ public class Road {
 
     public Road(final Intersection theSource, final Intersection theDestination,
                 final double theDistance, final double theSpeedLimit, final CardinalDirection theDirection) {
+        if (theSource == null || theDestination == null) {
+            throw new IllegalArgumentException("Road cannot be initialized with a null intersection.");
+        }
         this.myConnection = new Intersection[]{theSource, theDestination};
         this.myLength = theDistance;
         this.mySpeedLimit = theSpeedLimit;
         this.myDirection = theDirection;
     }
 
-    public double getLength() {
+    public final double getLength() {
         return myLength;
     } // length in meters
 
-    public double getSpeedLimit() {
+    public final double getSpeedLimit() {
         return mySpeedLimit;
     } // speed limit in km/h
 
-    public Intersection getSource() {
+    public final Intersection getSource() {
         return myConnection[0];
     }
 
-    public Intersection getDestination() {
+    public final Intersection getDestination() {
         return myConnection[1];
     }
 
-    public CardinalDirection getDirection() {
+    public final CardinalDirection getDirection() {
         return myDirection;
     }
 
-    public CardinalDirection getDirection(final Intersection theSource) {
+    public final CardinalDirection getDirection(final Intersection theSource) {
        if (!theSource.equals(myConnection[0])) {
            return CardinalDirection.swapDirection(myDirection);
        }

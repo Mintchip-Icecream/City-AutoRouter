@@ -1,10 +1,20 @@
 package Simulation;
 
-import Map.*;
+import Map.CityMap;
+import Map.Intersection;
+import Map.Road;
+
 import Routing.Route;
 
-import java.util.ArrayList;
-
+/**
+ * Safety evaluation model for routes. Contains a series of static methods that determine the safety risk associated
+ * with an intersection, road, or route given the passed EnvironmentSimulator instance. Different conditions are
+ * weighted differently. For example, our current implementation dictates that obstacles and roadblocks provide
+ * a greater risk than poor weather.
+ *
+ * @author June Flores
+ * @version 11/15/25
+ */
 public class SafetyChecker {
     private static final double CONDITION_SCALAR = 1.5;
     private static final double WEATHER_TIME_WEIGHT = 0.2;
@@ -13,23 +23,25 @@ public class SafetyChecker {
     private static final double WEATHER_SAFETY_WEIGHT = 0.2;
     private static final double TRAFFIC_SAFETY_WEIGHT = 0.3;
     private static final double OBSTACLE_SAFETY_WEIGHT = 0.5;
+    private static final int PRINT_DECIMAL_PLACES = 3;
+    private static final int NUMBER_BASE = 10;
 
     public SafetyChecker() {
     }
 
-    public static double safetyRisk(Intersection theIntersection, EnvironmentSimulator theSim) {
+    public static double safetyRisk(final Intersection theIntersection, final EnvironmentSimulator theSim) {
         Conditions cond = theSim.getCondition(theIntersection);
         return cond.getObstacleSeverity() * OBSTACLE_SAFETY_WEIGHT + cond.getWeatherFactor() * WEATHER_SAFETY_WEIGHT
                 + cond.getTrafficDensity() * TRAFFIC_SAFETY_WEIGHT;
     }
 
-    public static double safetyRisk(Road theRoad, EnvironmentSimulator theSim) {
+    public static double safetyRisk(final Road theRoad, final EnvironmentSimulator theSim) {
         Conditions cond = theSim.getCondition(theRoad);
         return cond.getObstacleSeverity() * OBSTACLE_SAFETY_WEIGHT + cond.getWeatherFactor() * WEATHER_SAFETY_WEIGHT
                 + cond.getTrafficDensity() * TRAFFIC_SAFETY_WEIGHT;
     }
 
-    public static double roadTime(Road theRoad, EnvironmentSimulator theSim) {
+    public static double roadTime(final Road theRoad, final EnvironmentSimulator theSim) {
         Conditions roadCon = theSim.getCondition(theRoad);
         double trafficMultiplier = roadCon.getObstacleSeverity() * OBSTACLE_TIME_WEIGHT
                 + roadCon.getTrafficDensity() * TRAFFIC_TIME_WEIGHT + roadCon.getWeatherFactor() * WEATHER_TIME_WEIGHT;
@@ -37,13 +49,13 @@ public class SafetyChecker {
     }
 
     // maxRouteSafety
-    public static double routeSafety(Route theRoute, EnvironmentSimulator theSim) {
+    public static double routeSafety(final Route theRoute, final EnvironmentSimulator theSim) {
         double maxRouteSafety = 0.0;
         Intersection[] routePath = theRoute.getRoute();
         Intersection from;
         Intersection to = routePath[1];
         for (int i = 1; i < routePath.length; i++) {
-            from = routePath[i-1];
+            from = routePath[i - 1];
             to = routePath[i];
             Road r = CityMap.getRoad(from, to);
             double fromRisk = safetyRisk(from, theSim);
@@ -54,16 +66,21 @@ public class SafetyChecker {
         return maxRouteSafety;
     }
 
-    public static String mapSafety(EnvironmentSimulator theSim) {
+    public static String mapSafety(final EnvironmentSimulator theSim) {
         StringBuilder sb = new StringBuilder();
         for (Intersection i : theSim.getIntersectionConditions().keySet()) {
             sb.append("[");
             sb.append(i.getID());
             sb.append(": ");
-            sb.append((double) Math.round(safetyRisk(i, theSim)*1000) / 1000);
+            sb.append(truncateNum(safetyRisk(i, theSim), PRINT_DECIMAL_PLACES));
             sb.append("] ");
         }
         return sb.toString();
+    }
+
+    private static double truncateNum(final double val, final int decimalPlaces) {
+        double scale = Math.pow(NUMBER_BASE, decimalPlaces);
+        return (double) Math.round(val *  scale) / scale;
     }
 
     // MAY IMPLEMENT HAZARD LIST LATER

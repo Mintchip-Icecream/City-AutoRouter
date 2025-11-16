@@ -12,8 +12,8 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         CityMap newCM = new CityMap(Files.readString(Path.of(fileName)));
-        EnvironmentSimulator em = new EnvironmentSimulator(newCM, 255L);
-        Model car = new Model(newCM, em);
+        EnvironmentSimulator em = new EnvironmentSimulator(newCM, 333L);
+        Controller car = new Controller(newCM, em);
         int startID = 1;
         int endID = 35;
         System.out.println("Computing route from location " + startID + " to location " + endID);
@@ -22,7 +22,8 @@ public class Main {
         Route[] routes = car.computeRoute(i1, i2, 0.05, 5);
         System.out.println("Routes computed: " + routes.length);
         for (Route r: routes)  {
-            System.out.println("Route Length: " + car.routeTime(r) + ", Safety Risk: " + truncateNum(car.routeSafety(r), 4));
+            System.out.println("Route Length: " + truncateNum(car.routeTime(r), 2) + " mins, Safety Risk: "
+                    + truncateNum(car.routeSafety(r), 4));
             System.out.println(Arrays.toString(r.getRouteIDs()));
             System.out.println(r.toDirections());
         }
@@ -30,7 +31,6 @@ public class Main {
 
     public static double truncateNum(double val, int decimalPlaces) {
         double scale = Math.pow(10, decimalPlaces);
-
         return (double) Math.round(val *  scale) / scale;
     }
 
