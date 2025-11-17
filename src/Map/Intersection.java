@@ -13,27 +13,63 @@ import java.util.Objects;
  * @version 11/15/25
  */
 public class Intersection {
+    /**
+     * Integer identifier for the intersection. We assume that in a map object, no two intersections share an ID.
+     */
     private final int myId;
-    private final ArrayList<Road> myRoads = new ArrayList<>(4); // we assume that intersections are connected to at most 4 roads
+    /**
+     * A list of road (edge) objects. We can determine which intersections we're connected to by checking the roads.
+     * Lists are initialized with a capacity of 4 because most intersections have just 4 roads or less.
+     */
+    private final ArrayList<Road> myRoads = new ArrayList<>(4);
+    /**
+     * Boolean determining if an intersection is a location or not. Locations are functionally the same as
+     * intersections, but can be set as the starts and ends of routes.
+     */
     private final boolean myAccessibility;
 
-    public Intersection(final boolean isLocation1, final int theID) {
+    /**
+     * Constructs an empty intersection with an ID number and is either a location or not.
+     * This is package-private, we want the creation of intersections to be encapsulated within the CityMap class.
+     *
+     * @param isLocation1 True if node is an intersection.
+     * @param theID The integer identifier of the intersection.
+     */
+    Intersection(final boolean isLocation1, final int theID) {
         this.myId = theID;
         this.myAccessibility = isLocation1;
     }
 
+    /**
+     * Returns the ID number of this intersection.
+     *
+     * @return the ID number of the intersection.
+     */
     public final int getID() {
         return myId;
     }
 
+    /**
+     * Returns true if the intersection is a location.
+     *
+     * @return true if this intersection is a location.
+     */
     public final boolean isLocation() {
         return myAccessibility;
     }
 
+    /**
+     * Returns an array of references to the Road objects connected to this intersection.
+     *
+     * @return an array of Road objects associated with the intersection.
+     */
     public final Road[] getRoadList() {
         return myRoads.toArray(new Road[0]);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean equals(final Object theObj) {
         if (this == theObj) { // compare memory location
@@ -57,13 +93,19 @@ public class Intersection {
         return Arrays.equals(getRoadList(), otherIntersection.getRoadList());
     }
 
+    /**
+     * Returns the string representation of the adjacency list of the intersection. The string consists of the
+     * ID number of the location/intersection and the ID numbers of the intersections it is connected to.
+     *
+     * @return the string representation of the intersection.
+     */
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         if (myAccessibility) {
             sb.append("Location ");
         } else {
-            sb.append("Map.Intersection ");
+            sb.append("Intersection ");
         }
         sb.append(myId);
         sb.append(": [");
@@ -72,7 +114,6 @@ public class Intersection {
                 sb.append(r.getSource().getID());
             } else {
                 sb.append(r.getDestination().getID());
-
             }
             sb.append(", ");
         }
@@ -82,11 +123,23 @@ public class Intersection {
         return sb.toString();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int hashCode() {
         return Objects.hash(myId, myRoads.size(), myAccessibility);
     }
 
+    /**
+     * Generates a road connecting this intersection to another intersection.
+     *
+     * @param theOther The other intersection this intersection will be connected to.
+     * @param theDistance The distance of the road.
+     * @param theSpeedLimit The speed limit of the road.
+     * @param theDirection The cardinal direction of the road.
+     * @return The road object created
+     */
     Road connectIntersection(final Intersection theOther, final double theDistance,
                              final double theSpeedLimit, final CardinalDirection theDirection) {
         Road newRoad = new Road(this, theOther, theDistance, theSpeedLimit, theDirection);
