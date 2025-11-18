@@ -1,19 +1,35 @@
 package Routing;
 
-import Map.*;
-
 import java.util.Arrays;
 
+import Map.CardinalDirection;
+import Map.CityMap;
+import Map.Direction;
+import Map.Intersection;
+import Map.Road;
+
+/**
+ * Object representing a route or a path between intersections from the starting location to the destination location.
+ * Contains the route, along with other methods to view route such as in the form of an array of intersection IDs,
+ * and plain language directions.
+ *
+ * @author June Flores
+ * @version 11/15/25
+ */
 public class Route {
     private final Intersection[] myIntersections;
 
-    Route(Intersection[] theIntersections) {
+    Route(final Intersection[] theIntersections) {
         this.myIntersections = theIntersections;
     }
 
-    Route(int[] theIDs, CityMap theMap) {
+    Route(final int[] theIDs, final CityMap theMap) {
         Intersection[] theIntersections = new Intersection[theIDs.length];
         for (int i = 0; i < theIDs.length; i++) {
+            Intersection addedIntersection = theMap.getIntersection(theIDs[i]);
+            if (addedIntersection == null) {
+                throw new IllegalArgumentException("Intersection " + theIDs[i] + " does not exist in passed map instance");
+            }
             theIntersections[i] = theMap.getIntersection(theIDs[i]);
         }
         myIntersections = theIntersections;
@@ -46,7 +62,7 @@ public class Route {
         sb.append(" from Location ");
         sb.append(from.getID());
         for (int i = 2; i < myIntersections.length; i++) {
-            from = myIntersections[i-1];
+            from = myIntersections[i - 1];
             to = myIntersections[i];
             r = CityMap.getRoad(from, to);
 
@@ -79,17 +95,25 @@ public class Route {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
+    public boolean equals(final Object theOther) {
+        if (this == theOther) {
             return true;
         }
-        if (obj == null) {
+        if (theOther == null) {
             return false;
         }
-        if (!(obj instanceof Route otherRoute)) {
+        if (!(theOther instanceof Route otherRoute)) {
+            return false;
+        }
+        if (this.hashCode() != otherRoute.hashCode()) {
             return false;
         }
         // compares if the routes have the same ID list
         return Arrays.equals(this.getRouteIDs(), otherRoute.getRouteIDs());
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(myIntersections);
     }
 }
