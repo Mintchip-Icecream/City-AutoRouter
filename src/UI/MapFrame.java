@@ -6,7 +6,9 @@ import Map.Road;
 import Map.CardinalDirection;
 import Routing.Route;
 
+import java.awt.Dimension;
 import javax.swing.JPanel;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -15,17 +17,25 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Random;
+import java.util.Set;
 
 public class MapFrame extends JPanel {
     private static final Color BACKGROUND = new Color(0xFFFFFF);
     private static final Color TEXT = new Color(0x000000);
     private static final Color LINE = new Color(0x0000F0);
+    private static final Color ROUTE = new Color(0xF00000);
 
     private CityMap myCityMap;
-    private Route myRoute;
+    final private List<Route> myRoutes;
+    final private Set<Route> myVisibleRoutes;
+    final private Map<Route, Set<Road>> myRouteRoads;
+    final private Map<Route, Color> myRouteColors;
 
     private int myX = 50;
     private int myY = 100;
@@ -33,26 +43,55 @@ public class MapFrame extends JPanel {
     private double myZoomFactor = 5;
 
     public MapFrame() {
-        this.setBackground(BACKGROUND);
+        myRoutes = new LinkedList<>();
+        myVisibleRoutes = new HashSet<>();
+        myRouteRoads = new HashMap<>();
+        myRouteColors = new HashMap<>();
+        setBackground(BACKGROUND);
         MouseAdapter ma = new MapMouseAdapter();
-        this.addMouseListener(ma);
-        this.addMouseMotionListener(ma);
-        this.addMouseWheelListener(ma);
+        addMouseListener(ma);
+        addMouseMotionListener(ma);
+        addMouseWheelListener(ma);
     }
 
     public void setCityMap(final CityMap theCityMap) {
-        this.myCityMap = theCityMap;
+        myCityMap = theCityMap;
     }
-    public void setRoute(final Route theRoute) {
-        this.myRoute = theRoute;
+    public void addRoute(final Route theRoute, final Color theColor) {
+        myRoutes.add(theRoute);
+        myVisibleRoutes.add(theRoute);
+        Intersection[] intersections = theRoute.getRoute();
+        Set<Road> roadSet = new HashSet<>(intersections.length);
+
+        for (int i = 1; i < intersections.length; i++) {
+            roadSet.add(CityMap.getRoad(intersections[i-1], intersections[i]));
+        }
+
+        myRouteRoads.put(theRoute, roadSet);
+        myRouteColors.put(theRoute, theColor);
     }
 
-    private void drawString(Graphics2D theGraphics, String theString, Point thePoint) {
-        theGraphics.drawString(theString, this.myX + thePoint.x * myZoom, this.myY + thePoint.y * myZoom);
+    public void setRouteVisibility(final Route theRoute, final boolean theVisibility) {
+        if(theVisibility) {
+            myVisibleRoutes.add(theRoute);
+        } else {
+            myVisibleRoutes.remove(theRoute);
+        }
+        repaint();
     }
 
-    private void drawLine(Graphics2D theGraphics, Point theFromPoint, Point theToPoint) {
-        theGraphics.drawLine(myX + theFromPoint.x * myZoom, myY + theFromPoint.y * myZoom, myX + theToPoint.x * myZoom, myY + theToPoint.y * myZoom);
+    private void drawString(final Graphics2D theGraphics, final String theString, final Point thePoint) {
+        theGraphics.drawString(theString, myX + thePoint.x * myZoom, myY + thePoint.y * myZoom);
+    }
+
+    private void drawLine(final Graphics2D theGraphics, final Point theFromPoint, final Point theToPoint, final int theOffset) {
+        theGraphics.drawLine(
+            myX + theFromPoint.x * myZoom + theOffset, myY + theFromPoint.y * myZoom + theOffset,
+            myX + theToPoint.x * myZoom + theOffset, myY + theToPoint.y * myZoom + theOffset);
+    }
+
+    private void drawIntersection(final Graphics2D theGraphics, final Point theIntersectionPos) {
+        theGraphics.fillOval(myX + theIntersectionPos.x * myZoom - 5, myY + theIntersectionPos.y * myZoom - 5, 10, 10);
     }
 
     @Override
@@ -71,13 +110,13 @@ public class MapFrame extends JPanel {
         queue.add(start);
         intersectionPositions.put(start, new Point(0, 0));
 
+        g2d.setStroke(new BasicStroke(2.0f));
+
         while(!queue.isEmpty()) {
             Intersection current = queue.poll();
 
             // draw intersection
             final Point currentPos = intersectionPositions.get(current);
-            g2d.setPaint(TEXT);
-            drawString(g2d, "" + current.getID(), currentPos);
 
             // visit all neighboring intersections
             for(Road road : current.getRoadList()) {
@@ -91,9 +130,27 @@ public class MapFrame extends JPanel {
                 } else {
                     // previously seen intersection, draw a road back to it
                     g2d.setPaint(LINE);
-                    drawLine(g2d, currentPos, intersectionPositions.get(other));
+
+                    final List<Color> lines = new LinkedList<>();
+                    lines.add(LINE);
+
+                    // draw a line for each route that crosses this road
+                    for(Route route : myRoutes) {
+                        if(!myVisibleRoutes.contains(route)) { continue; }
+                        if(myRouteRoads.get(route).contains(road)) {
+                            lines.add(myRouteColors.get(route));
+                        }
+                    }
+                    final double baseOffset = lines.size() * 3 / 2.0;
+                    for(int i = 0; i < lines.size(); i++) {
+                        g2d.setPaint(lines.get(i));
+                        drawLine(g2d, currentPos, intersectionPositions.get(other), (int) (baseOffset - i * 3));
+                    }
                 }
             }
+
+            g2d.setPaint(LINE);
+            drawIntersection(g2d, currentPos);
         }
     }
 
@@ -104,7 +161,7 @@ public class MapFrame extends JPanel {
         return theRoad.getSource();
     }
 
-    private static Point offset(CardinalDirection theDirection, Point thePoint) {
+    private static Point offset(final CardinalDirection theDirection, final Point thePoint) {
         return switch(theDirection) {
             case NORTH -> new Point(thePoint.x, thePoint.y - 1);
             case SOUTH -> new Point(thePoint.x, thePoint.y + 1);
@@ -145,7 +202,7 @@ public class MapFrame extends JPanel {
         }
 
         @Override
-        public void mouseWheelMoved(MouseWheelEvent theEvent) {
+        public void mouseWheelMoved(final MouseWheelEvent theEvent) {
             MapFrame.this.adjustZoom(theEvent.getWheelRotation());
         }
     }

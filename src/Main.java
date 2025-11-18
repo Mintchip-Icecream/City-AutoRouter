@@ -1,6 +1,7 @@
 import Map.*;
 import Routing.*;
 import Simulation.*;
+import UI.RouterGUI;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,6 +27,8 @@ public class Main {
             System.out.println(Arrays.toString(r.getRouteIDs()));
             System.out.println(r.toDirections());
         }
+
+        RouterGUI.start(newCM, routes);
     }
 
     public static double truncateNum(double val, int decimalPlaces) {
