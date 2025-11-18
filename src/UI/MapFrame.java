@@ -6,7 +6,6 @@ import Map.Road;
 import Map.CardinalDirection;
 import Routing.Route;
 
-import java.awt.Dimension;
 import javax.swing.JPanel;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -29,13 +28,15 @@ public class MapFrame extends JPanel {
     private static final Color BACKGROUND = new Color(0xFFFFFF);
     private static final Color TEXT = new Color(0x000000);
     private static final Color LINE = new Color(0x0000F0);
-    private static final Color ROUTE = new Color(0xF00000);
+    private static final Color ENDPOINT = new Color(0xF000F0);
 
     private CityMap myCityMap;
     final private List<Route> myRoutes;
     final private Set<Route> myVisibleRoutes;
     final private Map<Route, Set<Road>> myRouteRoads;
     final private Map<Route, Color> myRouteColors;
+    private Intersection myStart;
+    private Intersection myEnd;
 
     private int myX = 50;
     private int myY = 100;
@@ -70,7 +71,16 @@ public class MapFrame extends JPanel {
         myRouteRoads.put(theRoute, roadSet);
         myRouteColors.put(theRoute, theColor);
     }
+    public void setEndpoints(final Intersection theStart, final Intersection theEnd) {
+        myStart = theStart;
+        myEnd = theEnd;
+    }
 
+    /**
+     * Sets the visibility of a route.
+     * @param theRoute      the route to configure
+     * @param theVisibility whether or not this route should be visible
+     */
     public void setRouteVisibility(final Route theRoute, final boolean theVisibility) {
         if(theVisibility) {
             myVisibleRoutes.add(theRoute);
@@ -84,14 +94,26 @@ public class MapFrame extends JPanel {
         theGraphics.drawString(theString, myX + thePoint.x * myZoom, myY + thePoint.y * myZoom);
     }
 
+    /**
+     * Draws a line between the two map points, adjusted by the current view location & zoom.
+     * @param theGraphics   the graphics object to draw with
+     * @param theFromPoint  the start point of the line
+     * @param theToPoint    the end point of the line
+     * @param theOffset     an offset (in pixels) from the endpoints to draw the line from
+     */
     private void drawLine(final Graphics2D theGraphics, final Point theFromPoint, final Point theToPoint, final int theOffset) {
         theGraphics.drawLine(
             myX + theFromPoint.x * myZoom + theOffset, myY + theFromPoint.y * myZoom + theOffset,
             myX + theToPoint.x * myZoom + theOffset, myY + theToPoint.y * myZoom + theOffset);
     }
 
+    /**
+     * Draws a circle at an intersection's map point
+     * @param theGraphics           the graphics object to draw with
+     * @param theIntersectionPos    the map point to draw the intersection at
+     */
     private void drawIntersection(final Graphics2D theGraphics, final Point theIntersectionPos) {
-        theGraphics.fillOval(myX + theIntersectionPos.x * myZoom - 5, myY + theIntersectionPos.y * myZoom - 5, 10, 10);
+        theGraphics.fillOval(myX + theIntersectionPos.x * myZoom - 4, myY + theIntersectionPos.y * myZoom - 4, 10, 10);
     }
 
     @Override
@@ -150,6 +172,9 @@ public class MapFrame extends JPanel {
             }
 
             g2d.setPaint(LINE);
+            if(current.equals(myStart) || current.equals(myEnd)) {
+                g2d.setPaint(ENDPOINT);
+            }
             drawIntersection(g2d, currentPos);
         }
     }
@@ -161,6 +186,12 @@ public class MapFrame extends JPanel {
         return theRoad.getSource();
     }
 
+    /**
+     * Returns a new Point that is offset in the given direction.
+     * @param theDirection  the direction to offset in
+     * @param thePoint      the starting point
+     * @return  a new Point object
+     */
     private static Point offset(final CardinalDirection theDirection, final Point thePoint) {
         return switch(theDirection) {
             case NORTH -> new Point(thePoint.x, thePoint.y - 1);
@@ -177,7 +208,7 @@ public class MapFrame extends JPanel {
     }
 
     private void adjustZoom(final double theDeltaZoom) {
-        this.myZoomFactor = Math.clamp(this.myZoomFactor + theDeltaZoom / 4, 1.0, 8.0);
+        this.myZoomFactor = Math.clamp(this.myZoomFactor - theDeltaZoom / 4, 1.0, 8.0);
         this.myZoom = (int) Math.pow(2, this.myZoomFactor);
         this.repaint();
     }

@@ -1,6 +1,7 @@
 package UI;
 
 import Map.CityMap;
+import Map.Intersection;
 import Routing.Route;
 
 import javax.swing.JCheckBoxMenuItem;
@@ -18,7 +19,7 @@ public class RouterGUI extends JFrame {
     private final MapFrame mapFrame;
     private final JMenu viewMenu;
 
-    private RouterGUI() throws IOException {
+    public RouterGUI() throws IOException {
         super("City-AutoRouter");
         this.setSize(600, 500);
         this.setLocationRelativeTo(null);
@@ -49,10 +50,12 @@ public class RouterGUI extends JFrame {
         this.mapFrame.setCityMap(theCityMap);
     }
 
-    public void setRoutes(final Route[] routes) {
+    public void setRoutes(final Route[] theRoutes, final Intersection theStart, final Intersection theEnd) {
         Color[] colors = {new Color(0xF00000), new Color(0x00F000)};
-        for(int i = 0; i < routes.length; i++) {
-            final Route route = routes[i];
+        this.mapFrame.setEndpoints(theStart, theEnd);
+
+        for(int i = 0; i < theRoutes.length; i++) {
+            final Route route = theRoutes[i];
             this.mapFrame.addRoute(route, colors[i]);
 
             final JCheckBoxMenuItem visibility = new JCheckBoxMenuItem("Route " + (i + 1), true);
@@ -62,19 +65,5 @@ public class RouterGUI extends JFrame {
 
             viewMenu.add(visibility);
         }
-    }
-
-    public static void start(final CityMap theMap, final Route[] theRoutes) {
-        SwingUtilities.invokeLater(() -> {
-            RouterGUI gui = null;
-            try {
-                gui = new RouterGUI();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            gui.setCityMap(theMap);
-            gui.setRoutes(theRoutes);
-            gui.setVisible(true);
-        });
     }
 }

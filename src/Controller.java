@@ -9,6 +9,8 @@ import Routing.RouteManager;
 import Simulation.EnvironmentSimulator;
 import Simulation.SafetyChecker;
 
+import UI.RouterGUI;
+import java.io.IOException;
 import java.util.Random;
 
 /**
@@ -22,15 +24,20 @@ public class Controller {
     private EnvironmentSimulator mySim;
     private CityMap myMap;
     private RouteManager myRouteManager;
+    private RouterGUI myUI;
 //    private final long RNG_SEED = 445;
 
     public Controller() { }
 
-    public Controller(final CityMap theMap, final EnvironmentSimulator theSim) {
+    public Controller(final CityMap theMap, final EnvironmentSimulator theSim) throws IOException {
         this.myMap = theMap;
         this.mySim = theSim;
         myRouteManager = new RouteManager(myMap, mySim);
         System.out.println("CAR System Initialized");
+
+        this.myUI = new RouterGUI();
+        this.myUI.setCityMap(theMap);
+        this.myUI.setVisible(true);
     }
 
     public CityMap getMap() {
@@ -50,7 +57,9 @@ public class Controller {
 
     public Route[] computeRoute(final Intersection theStart, final Intersection theEnd,
                                 final double theRate, final int rateLimiter) {
-        return myRouteManager.getBestRoutes(theStart, theEnd, theRate, rateLimiter);
+        final Route[] routes = myRouteManager.getBestRoutes(theStart, theEnd, theRate, rateLimiter);
+        myUI.setRoutes(routes, theStart, theEnd);
+        return routes;
     }
 
     public Route[] computeRoute(final Intersection theStart, final Intersection theEnd) {
