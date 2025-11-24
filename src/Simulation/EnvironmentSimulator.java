@@ -1,9 +1,13 @@
 package Simulation;
 
+import DB.DBOps;
+import Map.CardinalDirection;
 import Map.CityMap;
 import Map.Intersection;
 import Map.Road;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -18,7 +22,7 @@ import java.util.Random;
  * @version 11/15/25
  */
 public class EnvironmentSimulator {
-    private static final boolean DEBUG_MODE = true;
+    private static final boolean DEBUG_MODE = false;
     private static final Conditions DEFAULT_CONDITION = new Conditions(0, 0, 0);
     private static final double LIGHT_BLOCKAGE = 0.333;
     private static final double LIGHT_WEATHER = 0.333;
@@ -38,13 +42,47 @@ public class EnvironmentSimulator {
     private final CityMap myMap;
     private final HashMap<Intersection, Conditions> myIntersections = new HashMap<>();
     private final HashMap<Road, Conditions> myRoads = new HashMap<>();
-    private final Random myRand;
+    private Random myRand;
+    private long myRNGSeed;
 
     public EnvironmentSimulator(final CityMap theMap, final long theRNGSeed) {
         this.myMap = theMap;
         this.myRand = new Random(theRNGSeed);
+        this.myRNGSeed = theRNGSeed;
         simulateConditions();
     }
+
+    public EnvironmentSimulator(final int theSimID, CityMap theMap) {
+        this.myMap = theMap;
+        DBOps db = DBOps.getInstance();
+        ResultSet simTuple;
+        ResultSet conditions;
+        try {
+            simTuple = db.loadSimTuple(theSimID);
+            myRNGSeed = simTuple.getInt(2);
+            myRand = new Random(myRNGSeed);
+            conditions = db.loadSim(theSimID);
+            HashMap<Intersection, Double> weatherFactors = new HashMap<>();
+            HashMap<Intersection, Double> blockageFactors = new HashMap<>();
+            HashMap<Intersection, Double> trafficFactors = new HashMap<>();
+
+            while (conditions.next()) {
+                Intersection i = myMap.getIntersection(conditions.getInt(2));
+                weatherFactors.put(i, conditions.getDouble(4));
+                blockageFactors.put(i, conditions.getDouble(5));
+                trafficFactors.put(i, conditions.getDouble(6));
+            }
+
+            fillOutCondition(weatherFactors, LIGHT_WEATHER);
+            fillOutCondition(trafficFactors, LIGHT_TRAFFIC);
+            fillOutCondition(blockageFactors, LIGHT_BLOCKAGE);
+            setAllConditions(weatherFactors, blockageFactors, trafficFactors);
+            System.out.println("Simulation " + theSimID + " Successfully Loaded");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public final Conditions getCondition(final Intersection theIntersection) {
         if (myIntersections.containsKey(theIntersection)) {
@@ -60,6 +98,10 @@ public class EnvironmentSimulator {
         return DEFAULT_CONDITION;
     }
 
+    public final long getSeed() {
+        return myRNGSeed;
+    }
+
     // checks if map is the same as the one this is initialized under
     public final boolean compareMap(final CityMap theOther) {
         return theOther.equals(myMap);
@@ -72,7 +114,6 @@ public class EnvironmentSimulator {
     public final HashMap<Road, Conditions> getRoadConditions() {
         return new HashMap<>(myRoads);
     }
-
 
     private void applyCondition(final Intersection inter1, final double theWeather,
                                 final double theBlockage, final double theTraffic) {
