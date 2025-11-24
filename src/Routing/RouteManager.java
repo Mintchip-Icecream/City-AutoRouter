@@ -26,6 +26,10 @@ public class RouteManager {
         this.mySim = theSim;
     }
 
+    public Route loadRoute(int[] theIntersectionList, final CityMap theMap) {
+        return new Route(theIntersectionList, theMap);
+    }
+
     public void setSimulation(final EnvironmentSimulator theSim) {
         this.mySim = theSim;
     }
