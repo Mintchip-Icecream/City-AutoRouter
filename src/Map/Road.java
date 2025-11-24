@@ -46,7 +46,7 @@ public class Road {
      * @param theSpeedLimit The speed limit in KM/H.
      * @param theDirection The cardinal direction of the road.
      */
-    Road(final Intersection theSource, final Intersection theDestination,
+    public Road(final Intersection theSource, final Intersection theDestination,
                 final double theDistance, final double theSpeedLimit, final CardinalDirection theDirection) {
         if (theSource == null || theDestination == null) {
             throw new IllegalArgumentException("Road cannot be initialized with a null intersection.");

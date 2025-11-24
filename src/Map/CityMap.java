@@ -1,5 +1,9 @@
 package Map;
 
+import DB.DBOps;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -56,6 +60,10 @@ public final class CityMap {
      */
     private static final int ROAD_DIRECTION_INDEX = 5;
     /**
+     * The map ID of our default map (the map in simMap.txt), always one
+     */
+    private static final int DEFAULT_MAP_ID = 1;
+    /**
      * HashMap containing the intersections. We access the intersections using their ID number.
      */
     private final HashMap<Integer, Intersection> myIntersections = new HashMap<>();
@@ -63,11 +71,44 @@ public final class CityMap {
      * List containing the roads in no particular order.
      */
     private final ArrayList<Road> myRoads = new ArrayList<>();
+    /**
+     * Default constructor for a CityMap that uses the default map (ID = 1)
+     */
+    public CityMap() {
+        this(getDefaultMapID());
+    }
 
     /**
-     * Default constructor for a CityMap that's empty with no intersections or roads.
+     * Initializes a map constructed from the map saved in the database that has the id in the CityMap, empty map if
+     * there's no saved map.
+     *
+     * @param mapID the ID of the map that we'll reconstruct from the database.
      */
-    public CityMap() { }
+    public CityMap(final int mapID) {
+        DBOps db = DBOps.getInstance();
+        ResultSet roadRS;
+        ResultSet interRS;
+        try {
+            interRS = db.intersectionList(mapID);
+            roadRS = db.roadList(mapID);
+            while (interRS.next()) {
+                addIntersection(interRS.getInt(3), interRS.getInt(1));
+//                System.out.println(myIntersections.get(interRS.getInt(1)));
+            }
+            while (roadRS.next()) {
+                int sID = roadRS.getInt(1);
+                int dID = roadRS.getInt(2);
+                double roadLen = roadRS.getDouble(4);
+                double speedLim = roadRS.getDouble(5);
+                CardinalDirection direction = CardinalDirection.valueOf(roadRS.getString(6));
+                addRoad(sID, dID, roadLen, speedLim, direction);
+            }
+            System.out.println("Map Load Success!");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+    }
 
     /**
      * Initializes a CityMap according to a string of text containing the map data. For correct initialization,
@@ -85,7 +126,6 @@ public final class CityMap {
     public CityMap(final String theMapList) {
         int counter = 0;
         String[] myInputLines = theMapList.split("\\s+"); // splits inputs by spaces and line breaks
-
         while (counter < myInputLines.length - 1) {
             if (myInputLines[counter].equals("I")) {
                 int isLocation = Integer.parseInt(myInputLines[counter + INTERSECTION_TYPE_INDEX]);
@@ -129,6 +169,10 @@ public final class CityMap {
             }
         }
         return null;
+    }
+
+    public static int getDefaultMapID() {
+        return DEFAULT_MAP_ID;
     }
 
     /**
@@ -210,11 +254,11 @@ public final class CityMap {
      * Integer-Intersection entry pair.
      *
      * @param isLocation1 The number representing if the intersection is a location, 0 = false, 1 = true.
-     * @param intersectionID The unique ID number of the intersection,
+     * @param theIntersectionID The unique ID number of the intersection,
      *                       if the ID is already existing, it will override the previous intersection.
      */
-    private void addIntersection(final int isLocation1, final int intersectionID) {
-        myIntersections.put(intersectionID, new Intersection(isLocation1 == 1, intersectionID));
+    private void addIntersection(final int isLocation1, final int theIntersectionID) {
+        myIntersections.put(theIntersectionID, new Intersection(isLocation1 == 1, theIntersectionID));
     }
 
     /**

@@ -1,4 +1,5 @@
 
+import DB.DBOps;
 import Map.CityMap;
 import Map.Intersection;
 import Map.Road;
@@ -9,6 +10,10 @@ import Routing.RouteManager;
 import Simulation.EnvironmentSimulator;
 import Simulation.SafetyChecker;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.SQLException;
 import java.util.Random;
 
 /**
@@ -22,15 +27,55 @@ public class Controller {
     private EnvironmentSimulator mySim;
     private CityMap myMap;
     private RouteManager myRouteManager;
-//    private final long RNG_SEED = 445;
+    private DBOps myDB;
+    private int myMapID;
+    private static final long RNG_SEED = 336L;
 
-    public Controller() { }
+    public Controller() throws SQLException {
+        Random rand = new Random();
+        myDB = DBOps.getInstance();
+        myMapID = CityMap.getDefaultMapID();
+        myMap = new CityMap();
+        mySim = new EnvironmentSimulator(myMap, rand.nextLong());
+        myRouteManager = new RouteManager(myMap, mySim);
+    }
 
-    public Controller(final CityMap theMap, final EnvironmentSimulator theSim) {
+    public Controller(final CityMap theMap, final EnvironmentSimulator theSim) throws SQLException {
         this.myMap = theMap;
         this.mySim = theSim;
         myRouteManager = new RouteManager(myMap, mySim);
+        DBOps myDB = DBOps.getInstance();
         System.out.println("CAR System Initialized");
+    }
+
+    public void saveMap(String theFileName) throws IOException {
+        String readFile = Files.readString(Path.of(theFileName));
+        myDB.saveMap(readFile, theFileName);
+    }
+
+    public void loadMap(int theMapID) {
+        CityMap newMap = new CityMap(theMapID);
+        if (!(newMap.getAllIntersections().length == 0)) {
+            myMapID = theMapID;
+            loadMap(newMap);
+        }
+    }
+
+    public void saveSim() {
+        myDB.saveSim(mySim, myMapID);
+    }
+
+    public void loadSim(final int theSimID) {
+        helpLoadSimulation(new EnvironmentSimulator(theSimID, myMap));
+    }
+
+    public void saveRoute(final Route theRoute) {
+        myDB.saveRoute(theRoute, myMapID);
+    }
+
+    public Route loadRoute(int theRouteID) {
+        int[] interIDList = myDB.loadRoute(theRouteID);
+        return myRouteManager.loadRoute(interIDList, myMap);
     }
 
     public CityMap getMap() {
