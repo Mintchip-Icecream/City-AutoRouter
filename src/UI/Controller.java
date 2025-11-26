@@ -1,3 +1,4 @@
+package UI;
 
 import DB.DBOps;
 import Map.CityMap;
@@ -10,7 +11,6 @@ import Routing.RouteManager;
 import Simulation.EnvironmentSimulator;
 import Simulation.SafetyChecker;
 
-import UI.RouterGUI;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,7 +28,6 @@ public class Controller {
     private EnvironmentSimulator mySim;
     private CityMap myMap;
     private RouteManager myRouteManager;
-    private RouterGUI myUI;
 //    private final long RNG_SEED = 445;
     private DBOps myDB;
     private int myMapID;
@@ -49,10 +48,6 @@ public class Controller {
         myRouteManager = new RouteManager(myMap, mySim);
         DBOps myDB = DBOps.getInstance();
         System.out.println("CAR System Initialized");
-
-        this.myUI = new RouterGUI();
-        this.myUI.setCityMap(theMap);
-        this.myUI.setVisible(true);
     }
 
     public void saveMap(String theFileName) throws IOException {
@@ -102,9 +97,7 @@ public class Controller {
 
     public Route[] computeRoute(final Intersection theStart, final Intersection theEnd,
                                 final double theRate, final int rateLimiter) {
-        final Route[] routes = myRouteManager.getBestRoutes(theStart, theEnd, theRate, rateLimiter);
-        myUI.setRoutes(routes, theStart, theEnd);
-        return routes;
+        return myRouteManager.getBestRoutes(theStart, theEnd, theRate, rateLimiter);
     }
 
     public Route[] computeRoute(final Intersection theStart, final Intersection theEnd) {

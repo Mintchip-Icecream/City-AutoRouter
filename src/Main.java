@@ -1,7 +1,7 @@
 import Map.*;
 import Routing.*;
 import Simulation.*;
-import UI.RouterGUI;
+import UI.Controller;
 
 import java.io.IOException;
 import java.sql.SQLException;

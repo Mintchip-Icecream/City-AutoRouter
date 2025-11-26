@@ -6,6 +6,10 @@ import Map.Road;
 import Map.CardinalDirection;
 import Routing.Route;
 
+import java.awt.RenderingHints;
+import java.awt.Stroke;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Line2D;
 import javax.swing.JPanel;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -27,8 +31,10 @@ import java.util.Set;
 public class MapFrame extends JPanel {
     private static final Color BACKGROUND = new Color(0xFFFFFF);
     private static final Color TEXT = new Color(0x000000);
-    private static final Color LINE = new Color(0x0000F0);
+    private static final Color LINE = new Color(0x000000);
     private static final Color ENDPOINT = new Color(0xF000F0);
+    private static final Stroke MAP_STROKE = new BasicStroke(1.25f);
+    private static final Stroke ROUTE_STROKE = new BasicStroke(2.25f);
 
     private CityMap myCityMap;
     final private List<Route> myRoutes;
@@ -58,18 +64,22 @@ public class MapFrame extends JPanel {
     public void setCityMap(final CityMap theCityMap) {
         myCityMap = theCityMap;
     }
-    public void addRoute(final Route theRoute, final Color theColor) {
-        myRoutes.add(theRoute);
-        myVisibleRoutes.add(theRoute);
-        Intersection[] intersections = theRoute.getRoute();
-        Set<Road> roadSet = new HashSet<>(intersections.length);
+    public void setRoutes(final Route[] theRoutes) {
+        final Random rand = new Random(0);
 
-        for (int i = 1; i < intersections.length; i++) {
-            roadSet.add(CityMap.getRoad(intersections[i-1], intersections[i]));
+        for(final Route route : theRoutes) {
+            myRoutes.add(route);
+            myVisibleRoutes.add(route);
+            Intersection[] intersections = route.getRoute();
+            Set<Road> roadSet = new HashSet<>(intersections.length);
+
+            for (int i = 1; i < intersections.length; i++) {
+                roadSet.add(CityMap.getRoad(intersections[i-1], intersections[i]));
+            }
+
+            myRouteRoads.put(route, roadSet);
+            myRouteColors.put(route, Color.getHSBColor(rand.nextFloat(), rand.nextFloat(0.5f, 0.8f), 0.9f));
         }
-
-        myRouteRoads.put(theRoute, roadSet);
-        myRouteColors.put(theRoute, theColor);
     }
     public void setEndpoints(final Intersection theStart, final Intersection theEnd) {
         myStart = theStart;
@@ -101,10 +111,12 @@ public class MapFrame extends JPanel {
      * @param theToPoint    the end point of the line
      * @param theOffset     an offset (in pixels) from the endpoints to draw the line from
      */
-    private void drawLine(final Graphics2D theGraphics, final Point theFromPoint, final Point theToPoint, final int theOffset) {
-        theGraphics.drawLine(
-            myX + theFromPoint.x * myZoom + theOffset, myY + theFromPoint.y * myZoom + theOffset,
-            myX + theToPoint.x * myZoom + theOffset, myY + theToPoint.y * myZoom + theOffset);
+    private void drawLine(final Graphics2D theGraphics, final Point theFromPoint,
+                          final Point theToPoint, final int theOffset) {
+        final double offset = theOffset * myZoom / 16.0;
+        theGraphics.draw(new Line2D.Double(
+            myX + theFromPoint.x * myZoom + offset, myY + theFromPoint.y * myZoom + offset,
+            myX + theToPoint.x * myZoom + offset, myY + theToPoint.y * myZoom + offset));
     }
 
     /**
@@ -113,17 +125,22 @@ public class MapFrame extends JPanel {
      * @param theIntersectionPos    the map point to draw the intersection at
      */
     private void drawIntersection(final Graphics2D theGraphics, final Point theIntersectionPos) {
-        theGraphics.fillOval(myX + theIntersectionPos.x * myZoom - 4, myY + theIntersectionPos.y * myZoom - 4, 10, 10);
+        final double radius = myZoom / 8.0;
+        theGraphics.fill(new Ellipse2D.Double(
+            myX + theIntersectionPos.x * myZoom - radius + 1,
+            myY + theIntersectionPos.y * myZoom - radius + 1,
+            radius * 2, radius * 2));
     }
 
     @Override
     public void paintComponent(final Graphics theGraphics) {
         super.paintComponent(theGraphics);
-        final Graphics2D g2d = (Graphics2D) theGraphics;
-
         if(myCityMap == null) {
             return;
         }
+
+        final Graphics2D g2d = (Graphics2D) theGraphics;
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         final Queue<Intersection> queue = new LinkedList<>();
         final Map<Intersection, Point> intersectionPositions = new HashMap<>();
@@ -132,12 +149,8 @@ public class MapFrame extends JPanel {
         queue.add(start);
         intersectionPositions.put(start, new Point(0, 0));
 
-        g2d.setStroke(new BasicStroke(2.0f));
-
         while(!queue.isEmpty()) {
             Intersection current = queue.poll();
-
-            // draw intersection
             final Point currentPos = intersectionPositions.get(current);
 
             // visit all neighboring intersections
@@ -152,30 +165,35 @@ public class MapFrame extends JPanel {
                 } else {
                     // previously seen intersection, draw a road back to it
                     g2d.setPaint(LINE);
-
-                    final List<Color> lines = new LinkedList<>();
-                    lines.add(LINE);
+                    g2d.setStroke(MAP_STROKE);
+                    drawLine(g2d, currentPos, intersectionPositions.get(other), 0);
 
                     // draw a line for each route that crosses this road
+                    final List<Color> lines = new LinkedList<>();
                     for(Route route : myRoutes) {
                         if(!myVisibleRoutes.contains(route)) { continue; }
                         if(myRouteRoads.get(route).contains(road)) {
                             lines.add(myRouteColors.get(route));
                         }
                     }
-                    final double baseOffset = lines.size() * 3 / 2.0;
+                    g2d.setStroke(ROUTE_STROKE);
                     for(int i = 0; i < lines.size(); i++) {
                         g2d.setPaint(lines.get(i));
-                        drawLine(g2d, currentPos, intersectionPositions.get(other), (int) (baseOffset - i * 3));
+                        final int offset = ((i % 2) == 0 ? 1 : -1) * (i/2 + 1);
+                        drawLine(g2d, currentPos, intersectionPositions.get(other), offset);
                     }
                 }
             }
+        }
 
+        // draw intersections after roads so they're layered on top of the lines
+        for(Map.Entry<Intersection, Point> entry : intersectionPositions.entrySet()) {
+            final Intersection intersection = entry.getKey();
             g2d.setPaint(LINE);
-            if(current.equals(myStart) || current.equals(myEnd)) {
+            if(intersection.equals(myStart) || intersection.equals(myEnd)) {
                 g2d.setPaint(ENDPOINT);
             }
-            drawIntersection(g2d, currentPos);
+            drawIntersection(g2d, entry.getValue());
         }
     }
 
