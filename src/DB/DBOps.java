@@ -9,6 +9,9 @@ import Simulation.EnvironmentSimulator;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class DBOps {
     private Connection myConnection;
@@ -28,8 +31,86 @@ public class DBOps {
         return uniqueInstance;
     }
 
+    /**
+     * Returns a list of map IDs and their respective name in descending order (most recently added map first)
+     *
+     * @return a list of map IDs and the name of each map
+     */
+    public synchronized Map<Integer, String> getMaps() {
+        try {
+            PreparedStatement stmt = myConnection.prepareStatement("SELECT * FROM Map ORDER BY mapID DESC");
+            ResultSet rs = stmt.executeQuery();
+            Map<Integer, String> resultMap = new LinkedHashMap<>();
+            while (rs.next()) {
+                resultMap.put(rs.getInt(1), rs.getString(2));
+            }
+            return resultMap;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Returns a set of routes as their Route ID and a 2 integer list representing the first and last intersections,
+     * this is for display purposes, when actually loading a route to use, use the loadRoute method.
+     *
+     * @return a map of routes and their first and last intersections ordered by most recently used.
+     */
+    public synchronized Map<Integer, int[]> getRoutes() {
+        try {
+            PreparedStatement rtStmt = myConnection.prepareStatement("SELECT routeID FROM Routes ORDER BY lastUsed DESC");
+            ResultSet routes = rtStmt.executeQuery();
+            Map<Integer, int[]> resultMap = new LinkedHashMap<>();
+
+            while (routes.next()) {
+                int[] localIDs = new int[2];
+                int routeID = routes.getInt(1);
+                PreparedStatement firstInt = myConnection.prepareStatement("SELECT intersectionID FROM " +
+                        "RouteSequence WHERE routeID = ? ORDER BY sequenceIndex ASC LIMIT 1");
+                firstInt.setInt(1, routeID);
+                ResultSet firstInter = firstInt.executeQuery();
+                if (firstInter.next()) {
+                    localIDs[0] = firstInter.getInt(1);
+                }
+                PreparedStatement secondInt = myConnection.prepareStatement("SELECT intersectionID FROM " +
+                        "RouteSequence WHERE routeID = ? ORDER BY sequenceIndex DESC LIMIT 1");
+                secondInt.setInt(1, routeID);
+                ResultSet lastInter =  secondInt.executeQuery();
+                if (lastInter.next()) {
+                    localIDs[1] = lastInter.getInt(1);
+                }
+                resultMap.put(routeID, localIDs);
+            }
+            return resultMap;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Returns all of the simulations by order of most recently used.
+     *
+     * @return a map of simulationIDs and the date they were used.
+     */
+    public synchronized Map<Integer, String> getSimulations() {
+        try {
+            PreparedStatement stmt = myConnection.prepareStatement("SELECT simID, date(lastUsed) FROM Simulation ORDER BY lastUsed DESC");
+            ResultSet rs = stmt.executeQuery();
+            Map<Integer, String> resultMap = new LinkedHashMap<>();
+            while (rs.next()) {
+                resultMap.put(rs.getInt(1), rs.getString(2));
+            }
+            return resultMap;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     // plan: Route takes a txt, generates a map from it,
-    public synchronized void saveMap(String theMapString, String theMapName) {
+    public synchronized CityMap saveMap(String theMapString, String theMapName) {
         try {
             PreparedStatement mapStmt = myConnection.prepareStatement("INSERT INTO Map (mapName) VALUES (?)");
             mapStmt.setString(1, theMapName);
@@ -61,6 +142,7 @@ public class DBOps {
             roadStmt.executeBatch();
             myConnection.commit();
             System.out.println("Saving was successful");
+            return theMap;
         } catch (SQLException e) {
             if (myConnection != null) {
                 try {
@@ -72,6 +154,7 @@ public class DBOps {
             }
             e.printStackTrace();
         }
+        return null;
     }
 
     public synchronized void saveSim(EnvironmentSimulator theSim, int theMapID) {

@@ -91,6 +91,9 @@ public final class CityMap {
         try {
             interRS = db.intersectionList(mapID);
             roadRS = db.roadList(mapID);
+            if (interRS == null || roadRS == null) {
+                throw new IllegalArgumentException("Passed Map ID did not return any results");
+            }
             while (interRS.next()) {
                 addIntersection(interRS.getInt(3), interRS.getInt(1));
 //                System.out.println(myIntersections.get(interRS.getInt(1)));
