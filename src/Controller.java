@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -50,14 +51,17 @@ public class Controller {
         DBOps myDB = DBOps.getInstance();
         System.out.println("CAR System Initialized");
 
-        this.myUI = new RouterGUI();
-        this.myUI.setCityMap(theMap);
-        this.myUI.setVisible(true);
+//        this.myUI = new RouterGUI();
+//        this.myUI.setCityMap(theMap);
+//        this.myUI.setVisible(true);
     }
 
     public void saveMap(String theFileName) throws IOException {
         String readFile = Files.readString(Path.of(theFileName));
-        myDB.saveMap(readFile, theFileName);
+        CityMap cm = myDB.saveMap(readFile, theFileName);
+        if (cm != null) {
+            loadMap(cm);
+        }
     }
 
     public void loadMap(int theMapID) {
@@ -66,6 +70,18 @@ public class Controller {
             myMapID = theMapID;
             loadMap(newMap);
         }
+    }
+
+    public Map<Integer, int[]> getRoutes() {
+        return myDB.getRoutes();
+    }
+
+    public Map<Integer, String> getSimulations() {
+        return myDB.getSimulations();
+    }
+
+    public Map<Integer, String> getMaps() {
+        return myDB.getMaps();
     }
 
     public void saveSim() {
@@ -103,7 +119,7 @@ public class Controller {
     public Route[] computeRoute(final Intersection theStart, final Intersection theEnd,
                                 final double theRate, final int rateLimiter) {
         final Route[] routes = myRouteManager.getBestRoutes(theStart, theEnd, theRate, rateLimiter);
-        myUI.setRoutes(routes, theStart, theEnd);
+//        myUI.setRoutes(routes, theStart, theEnd);
         return routes;
     }
 
@@ -114,18 +130,18 @@ public class Controller {
         return null;
     }
 
-    public Route[] computeRoute(final Intersection theStart, final Intersection theEnd, final double theRate) {
-        return myRouteManager.getBestRoutes(theStart, theEnd, theRate, Integer.MAX_VALUE);
-    }
-
-    public Route[] computeRoute(final Intersection theStart, final Intersection theEnd, final int rateLimiter) {
-        return myRouteManager.getBestRoutes(theStart, theEnd, DEFAULT_THRESHOLD_RATE, Integer.MAX_VALUE);
-    }
-
-    public Route[] computeRoute(final Intersection theStart, final Intersection theEnd, final double theRate,
-                                final int rateLimiter, final double maxThreshold) {
-        return myRouteManager.getBestRoutes(theStart, theEnd, theRate, rateLimiter, maxThreshold);
-    }
+//    public Route[] computeRoute(final Intersection theStart, final Intersection theEnd, final double theRate) {
+//        return myRouteManager.getBestRoutes(theStart, theEnd, theRate, Integer.MAX_VALUE);
+//    }
+//
+//    public Route[] computeRoute(final Intersection theStart, final Intersection theEnd, final int rateLimiter) {
+//        return myRouteManager.getBestRoutes(theStart, theEnd, DEFAULT_THRESHOLD_RATE, Integer.MAX_VALUE);
+//    }
+//
+//    public Route[] computeRoute(final Intersection theStart, final Intersection theEnd, final double theRate,
+//                                final int rateLimiter, final double maxThreshold) {
+//        return myRouteManager.getBestRoutes(theStart, theEnd, theRate, rateLimiter, maxThreshold);
+//    }
 
     public double routeSafety(final Route theRoute) {
         return SafetyChecker.routeSafety(theRoute, mySim);
