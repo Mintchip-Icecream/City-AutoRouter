@@ -28,7 +28,7 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 
-public class MapFrame extends JPanel {
+public class MapPanel extends JPanel {
     private static final Color BACKGROUND = new Color(0xFFFFFF);
     private static final Color TEXT = new Color(0x000000);
     private static final Color LINE = new Color(0x000000);
@@ -49,7 +49,7 @@ public class MapFrame extends JPanel {
     private int myZoom = 32;
     private double myZoomFactor = 5;
 
-    public MapFrame() {
+    public MapPanel() {
         myRoutes = new LinkedList<>();
         myVisibleRoutes = new HashSet<>();
         myRouteRoads = new HashMap<>();
@@ -65,6 +65,10 @@ public class MapFrame extends JPanel {
         myCityMap = theCityMap;
     }
     public void setRoutes(final Route[] theRoutes) {
+        myRoutes.clear();
+        myVisibleRoutes.clear();
+        myRouteRoads.clear();
+        myRouteColors.clear();
         final Random rand = new Random(0);
 
         for(final Route route : theRoutes) {
@@ -245,14 +249,14 @@ public class MapFrame extends JPanel {
 
         @Override
         public void mouseDragged(final MouseEvent theEvent) {
-            MapFrame.this.adjustView(theEvent.getX() - this.myCurrentX, theEvent.getY() - this.myCurrentY);
+            MapPanel.this.adjustView(theEvent.getX() - this.myCurrentX, theEvent.getY() - this.myCurrentY);
             this.myCurrentX = theEvent.getX();
             this.myCurrentY = theEvent.getY();
         }
 
         @Override
         public void mouseWheelMoved(final MouseWheelEvent theEvent) {
-            MapFrame.this.adjustZoom(theEvent.getWheelRotation());
+            MapPanel.this.adjustZoom(theEvent.getWheelRotation());
         }
     }
 }
