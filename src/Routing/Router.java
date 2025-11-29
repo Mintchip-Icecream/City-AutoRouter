@@ -18,7 +18,7 @@ import Simulation.SafetyChecker;
  * @author June Flores
  * @version 11/15/25
  */
-public class Router {
+class Router {
     /**
      * An epsilon, representing a small arbritrary value that is the upper bound of relative error in floating point
      * arithmetic. If the difference between 2 doubles is lower than this epsilon, it is considered functionally

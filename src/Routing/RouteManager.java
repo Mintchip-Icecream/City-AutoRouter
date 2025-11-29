@@ -82,7 +82,10 @@ public class RouteManager {
         // starting with a negative because we'll increment at the start in case threshold goes over 1.0
         double threshold = 0 - theRate;
         Route prevRoute = null;
-        while (results.size() <= rateLimiter && threshold <= 1.0) {
+        if (theStart.equals(theEnd)) {
+            throw new IllegalArgumentException("Start and end have to be different");
+        }
+        while (results.size() < rateLimiter && threshold <= 1.0) {
             threshold += theRate;
             Route theResult = myRouter.computeRoute(theStart, theEnd, threshold, mySim);
             if (theResult != null && !theResult.equals(prevRoute)) {
@@ -111,16 +114,16 @@ public class RouteManager {
         ArrayList<Route> results = new ArrayList<>();
         double threshold = 0 - theRate;
         Route prevRoute = null;
-        while (results.size() <= rateLimiter && threshold <= maxThreshold) {
+        if (theStart.equals(theEnd)) {
+            throw new IllegalArgumentException("Start and end have to be different");
+        }
+        while (results.size() < rateLimiter && threshold <= maxThreshold) {
             threshold += theRate;
             Route theResult = myRouter.computeRoute(theStart, theEnd, threshold, mySim);
             if (theResult != null && !theResult.equals(prevRoute)) {
                 prevRoute = theResult;
                 results.add(theResult);
             }
-        }
-        if (results.isEmpty()) {
-            return null;
         }
         return results.toArray(new Route[0]);
     }

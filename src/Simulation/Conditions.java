@@ -1,5 +1,7 @@
 package Simulation;
 
+import java.util.Objects;
+
 /**
  * Data class that contains the risk levels of certain road or intersection conditions from 0 (representing no risk)
  * to 100 (representing very high risk in specific condition). Current implemented conditions are the weather risk,
@@ -64,5 +66,23 @@ public class Conditions {
     public final double getWeatherFactor() {
 
         return weatherFactor;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Conditions that = (Conditions) o;
+        return Double.compare(weatherFactor, that.weatherFactor) == 0 && Double.compare(blockageSeverity, that.blockageSeverity) == 0 && Double.compare(trafficDensity, that.trafficDensity) == 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(weatherFactor, blockageSeverity, trafficDensity);
     }
 }

@@ -91,7 +91,11 @@ public final class CityMap {
         try {
             interRS = db.intersectionList(mapID);
             roadRS = db.roadList(mapID);
-            if (interRS == null || roadRS == null) {
+            if (!interRS.isBeforeFirst()) {
+                throw new IllegalArgumentException("Passed Map ID did not return any intersections");
+
+            }
+            if (!roadRS.isBeforeFirst()) {
                 throw new IllegalArgumentException("Passed Map ID did not return any results");
             }
             while (interRS.next()) {
@@ -129,26 +133,30 @@ public final class CityMap {
     public CityMap(final String theMapList) {
         int counter = 0;
         String[] myInputLines = theMapList.split("\\s+"); // splits inputs by spaces and line breaks
-        while (counter < myInputLines.length - 1) {
-            if (myInputLines[counter].equals("I")) {
-                int isLocation = Integer.parseInt(myInputLines[counter + INTERSECTION_TYPE_INDEX]);
-                int interID = Integer.parseInt(myInputLines[counter + INTERSECTION_NUM_INDEX]);
-                addIntersection(isLocation, interID);
-                counter += INTERSECTION_LINE_LENGTH;
-            } else if (myInputLines[counter].equals("R")) {
-                int inter1 = Integer.parseInt(myInputLines[counter + ROAD_INTER_SOURCE_INDEX]);
-                int inter2 = Integer.parseInt(myInputLines[counter + ROAD_INTER_DEST_INDEX]);
-                double dist = Double.parseDouble(myInputLines[counter + ROAD_LENGTH_INDEX]);
-                double speed = Double.parseDouble(myInputLines[counter + ROAD_SPEED_LIMIT_INDEX]);
+        try {
+            while (counter < myInputLines.length - 1) {
+                if (myInputLines[counter].equals("I")) {
+                    int isLocation = Integer.parseInt(myInputLines[counter + INTERSECTION_TYPE_INDEX]);
+                    int interID = Integer.parseInt(myInputLines[counter + INTERSECTION_NUM_INDEX]);
+                    addIntersection(isLocation, interID);
+                    counter += INTERSECTION_LINE_LENGTH;
+                } else if (myInputLines[counter].equals("R")) {
+                    int inter1 = Integer.parseInt(myInputLines[counter + ROAD_INTER_SOURCE_INDEX]);
+                    int inter2 = Integer.parseInt(myInputLines[counter + ROAD_INTER_DEST_INDEX]);
+                    double dist = Double.parseDouble(myInputLines[counter + ROAD_LENGTH_INDEX]);
+                    double speed = Double.parseDouble(myInputLines[counter + ROAD_SPEED_LIMIT_INDEX]);
 
-                CardinalDirection theDirection = getCardinalDirection(myInputLines, counter);
+                    CardinalDirection theDirection = getCardinalDirection(myInputLines, counter);
 
-                addRoad(inter1, inter2, dist, speed, theDirection);
-                counter += ROAD_LINE_LENGTH;
-            } else {
-                throw new IllegalArgumentException("No intersection or road found while parsing argument line.");
+                    addRoad(inter1, inter2, dist, speed, theDirection);
+                    counter += ROAD_LINE_LENGTH;
+                } else {
+                    throw new IllegalArgumentException("No intersection or road found while parsing argument line.");
+                }
+                counter++;
             }
-            counter++;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Bad input string. Couldn't construct map");
         }
     }
 

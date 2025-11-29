@@ -294,7 +294,8 @@ public class DBOps {
             simStmt.setInt(1, theSimID);
             simStmt.executeUpdate();
             myConnection.commit();
-            PreparedStatement conStmt = myConnection.prepareStatement("SELECT * FROM InterConditions WHERE simID = ?");
+            PreparedStatement conStmt = myConnection.prepareStatement("SELECT interID, weatherRisk, obstacleRisk, " +
+                    "trafficRisk FROM InterConditions WHERE simID = ?");
             conStmt.setInt(1, theSimID);
             return conStmt.executeQuery();
         } catch (SQLException e) {
@@ -309,5 +310,9 @@ public class DBOps {
             e.printStackTrace();
         }
         return null;
+    }
+
+    synchronized void setConnection(Connection theConnection) {
+        this.myConnection = theConnection;
     }
 }

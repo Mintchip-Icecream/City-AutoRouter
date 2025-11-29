@@ -151,10 +151,10 @@ public class Road {
         if (mySpeedLimit != otherRoad.getSpeedLimit()) { // check if road isn't same speed limit
             return false;
         }
-       if (!this.getSource().equals(otherRoad.getSource())) { // check if road has same source
+       if (this.getSource().getID() != otherRoad.getSource().getID()) { // check if road has same source
            return false;
        }
-        return this.getDestination().equals(otherRoad.getDestination()); // check if
+        return this.getDestination().getID() == otherRoad.getDestination().getID(); // check if same destination
     }
 
     /**
@@ -162,6 +162,6 @@ public class Road {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(getSource(), getDestination(), myLength, mySpeedLimit, myDirection);
+        return Objects.hash(getSource().getID(), getDestination().getID(), myLength, mySpeedLimit, myDirection);
     }
 }
