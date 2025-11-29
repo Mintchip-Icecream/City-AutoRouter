@@ -76,7 +76,7 @@ public class EnvironmentSimulator {
      * of radius, which breaks the decay multiplier function by becoming a negative number. So we compare the decay
      * with this minimum and disregard the intersection if below this.
      */
-    private static final double MINIMUM_DECAY_MULTIPLIER = 0.001;
+    private static final double MINIMUM_DECAY_MULTIPLIER = 0.005;
     /**
      * When in debug mode, and printing the intersections and their simulated condition, we only print this amount
      * of intersections so that it's more easily readable in the console.
@@ -164,10 +164,10 @@ public class EnvironmentSimulator {
             HashMap<Intersection, Double> trafficFactors = new HashMap<>();
 
             while (conditions.next()) {
-                Intersection i = myMap.getIntersection(conditions.getInt(2));
-                weatherFactors.put(i, conditions.getDouble(4));
-                blockageFactors.put(i, conditions.getDouble(5));
-                trafficFactors.put(i, conditions.getDouble(6));
+                Intersection i = myMap.getIntersection(conditions.getInt(1));
+                weatherFactors.put(i, conditions.getDouble(2));
+                blockageFactors.put(i, conditions.getDouble(3));
+                trafficFactors.put(i, conditions.getDouble(4));
             }
             // randomizes the conditions on remaining intersections in case there's some missing from the DB
             fillOutCondition(weatherFactors, LIGHT_WEATHER);
@@ -286,7 +286,7 @@ public class EnvironmentSimulator {
 
         if (DEBUG_MODE) {
             System.out.println("Total Mileage of Map: " + distance);
-            System.out.println("Simulating Weather...");
+            System.out.println("\nSimulating Weather...");
         }
 
         // set the approximate distance we want to be affected by each condition, then run a simulation on the map for it
@@ -294,27 +294,42 @@ public class EnvironmentSimulator {
         // set weather parameters
         double distanceAffectedByWeather = distance * myRand.nextDouble(MINIMUM_CONDITION_COVERAGE, MAX_WEATHER_COVERAGE);
         simulateSingleCondition(distanceAffectedByWeather, LIGHT_WEATHER, SEVERITY_BOUND, weatherFactors);
+
+        if (DEBUG_MODE) {
+            System.out.println("Before filling out weather");
+            printMap(weatherFactors);
+        }
         fillOutCondition(weatherFactors, LIGHT_WEATHER);
 
         if (DEBUG_MODE) {
             System.out.println("Printing Weather Simulation.Conditions for all locations and intersections:");
             printMap(weatherFactors);
-            System.out.println("Simulating traffic...");
+            System.out.println("\nSimulating traffic...");
         }
 
         // set traffic parameters
         double distanceAffectedByTraffic = distance * myRand.nextDouble(MINIMUM_CONDITION_COVERAGE, MAX_TRAFFIC_COVERAGE);
         simulateSingleCondition(distanceAffectedByTraffic, LIGHT_TRAFFIC, SEVERITY_BOUND, trafficFactors);
+
+        if (DEBUG_MODE) {
+            System.out.println("Before filling out traffic");
+            printMap(trafficFactors);
+        }
         fillOutCondition(trafficFactors, LIGHT_TRAFFIC);
 
         if (DEBUG_MODE) {
             System.out.println("Printing Traffic Simulation.Conditions for all locations and intersections:");
             printMap(trafficFactors);
-            System.out.println("Simulating obstacles...");
+            System.out.println("\nSimulating obstacles...");
         }
 
         double distanceAffectedByObstacles = distance * myRand.nextDouble(MINIMUM_CONDITION_COVERAGE, MAX_BLOCKAGE_COVERAGE);
         simulateSingleCondition(distanceAffectedByObstacles, LIGHT_BLOCKAGE, SEVERITY_BOUND, blockageFactors);
+        if (DEBUG_MODE) {
+            System.out.println("Before filling out obstacles");
+            printMap(blockageFactors);
+        }
+
         fillOutCondition(blockageFactors, LIGHT_BLOCKAGE);
 
         if (DEBUG_MODE) {
@@ -335,6 +350,9 @@ public class EnvironmentSimulator {
     private void printMap(final HashMap<Intersection, Double> theConditionMap) {
         int counter = 0;
         for (Intersection i: myMap.getAllIntersections()) {
+            if (theConditionMap.get(i) == null) {
+                continue;
+            }
             if ((counter % OBJECTS_PER_LINE_PRINT) == 0) {
                 System.out.println();
             } else {
@@ -409,15 +427,24 @@ public class EnvironmentSimulator {
         while (distanceTraversed < theDistance) {
             // set up the epicenter of the condition event, don't set the condition to be too close to 1, it can still get to 1 other ways
             Intersection epicenter = interList[myRand.nextInt(0, interList.length)];
-            double epiCondition = myRand.nextDouble(theConditionOrigin, theConditionBound); // mild to pretty severe weather at the center
+//            double epiCondition = myRand.nextDouble(theConditionOrigin, theConditionBound); // mild to pretty severe weather at the center
             // we want to affect everything within this radius
             double radius = myRand.nextDouble(0, theDistance - (distanceTraversed));
+            // If we have a lower radius, we want to reduce the epicenter's condition slightly
+            double radiusRatio  = 1 - radius / theDistance; // low when radius is close to distance, high when it isn't
+            double radiusMultiplier = theConditionBound * radiusRatio; // if radius is low, this number will be closer to 100% of condition bound
+            double conditionMax = theConditionBound - (radiusMultiplier);
+            if (conditionMax < theConditionOrigin) {
+                conditionMax = conditionMax + theConditionOrigin;
+            }
+            double epiCondition = myRand.nextDouble(theConditionOrigin, conditionMax); // mild to pretty severe weather at the center
 
-            double searchDistance = makeConditionCluster(radius, epicenter, epiCondition, theConditions);
+
+            double searchDistance = makeConditionCluster(radius, epicenter, epiCondition, theConditionOrigin, theConditions);
             distanceTraversed += searchDistance;
             problemZonesCreated++;
             if (DEBUG_MODE) {
-                System.out.println("Epicenter: " + epicenter.getID() + ", " + epiCondition);
+                System.out.println("Epicenter: " + epicenter.getID() + ", " + epiCondition + ", radius=" + radius + "m");
             }
         }
         if (DEBUG_MODE) {
@@ -445,17 +472,17 @@ public class EnvironmentSimulator {
     private void addToCondition(final Intersection inter1, final double theAmount,
                                 final HashMap<Intersection, Double> theMap) {
         if (theMap.containsKey(inter1)) {
-            theMap.put(inter1, theMap.get(inter1) * (1 + theAmount));
-            if (theMap.get(inter1) >= 1) {
-                theMap.put(inter1, 1.0);
-            }
+            theMap.put(inter1, theMap.get(inter1) * (1 + (theAmount/4)));
         } else {
             theMap.put(inter1, theAmount);
+        }
+        if (theMap.get(inter1) >= 1) {
+            theMap.put(inter1, 1.0);
         }
     }
 
     private double makeConditionCluster(final double theRadius, final Intersection theOrigin,
-                                        final double theOriginCondition,
+                                        final double theOriginCondition, final double theConditionMin,
                                         final HashMap<Intersection, Double> theConditionMap) {
         // set up our bfs from the origin
         Queue<Intersection> bfsQueue =  new LinkedList<>();
@@ -471,10 +498,15 @@ public class EnvironmentSimulator {
             double totalDistance = distanceFromOrigin(distances.get(currEdge));
             // the line of code below could lead to a negative number, so set it to the absolute value or 0
             double decay  = 1.0 - distanceFromOrigin(distances.get(currEdge)) / theRadius;
-            if (decay <= 0) {
+            if (decay <= MINIMUM_DECAY_MULTIPLIER) {
                 decay = MINIMUM_DECAY_MULTIPLIER;
             }
-            addToCondition(currEdge, decay * theOriginCondition, theConditionMap);
+            double intersectionCondition = decay * theOriginCondition;
+            if (intersectionCondition < theConditionMin) {
+                // if condition less than min, then set it to min + (how much the origin is decayed)
+                intersectionCondition = theConditionMin;
+            }
+            addToCondition(currEdge, intersectionCondition, theConditionMap);
             if (visited.get(currEdge) != null) {
                 searchDistance += CityMap.getRoad(currEdge, visited.get(currEdge)).getLength();
             }

@@ -130,19 +130,6 @@ public class Controller {
         return null;
     }
 
-//    public Route[] computeRoute(final Intersection theStart, final Intersection theEnd, final double theRate) {
-//        return myRouteManager.getBestRoutes(theStart, theEnd, theRate, Integer.MAX_VALUE);
-//    }
-//
-//    public Route[] computeRoute(final Intersection theStart, final Intersection theEnd, final int rateLimiter) {
-//        return myRouteManager.getBestRoutes(theStart, theEnd, DEFAULT_THRESHOLD_RATE, Integer.MAX_VALUE);
-//    }
-//
-//    public Route[] computeRoute(final Intersection theStart, final Intersection theEnd, final double theRate,
-//                                final int rateLimiter, final double maxThreshold) {
-//        return myRouteManager.getBestRoutes(theStart, theEnd, theRate, rateLimiter, maxThreshold);
-//    }
-
     public double routeSafety(final Route theRoute) {
         return SafetyChecker.routeSafety(theRoute, mySim);
     }

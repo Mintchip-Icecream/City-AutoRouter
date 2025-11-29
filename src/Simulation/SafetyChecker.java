@@ -82,43 +82,4 @@ public class SafetyChecker {
         double scale = Math.pow(NUMBER_BASE, decimalPlaces);
         return (double) Math.round(val *  scale) / scale;
     }
-
-    // MAY IMPLEMENT HAZARD LIST LATER
-
-//    public static String[] hazardList(Route theRoute, EnvironmentSimulator theSim) {
-//        double distance = 0.0;
-//        double weatherRisk = 0.0;
-//        double trafficRisk = 0.0;
-//        double obstacleRisk = 0.0;
-//        ArrayList<String> result = new ArrayList<>();
-//        Intersection[] routePath = theRoute.getRoute();
-//        Intersection from = routePath[0];
-//        Intersection to = routePath[1];
-//        Road r = CityMap.getRoad(from, to);
-//        if (r == null) {
-//            return new String[]{"Invalid Route"};
-//        }
-//        CardinalDirection currentDir = r.getDirection(from);
-//        for (int i = 1; i < routePath.length; i++) {
-//            from = routePath[i-1];
-//            to = routePath[i];
-//            r = CityMap.getRoad(from, to);
-//            if (r == null) {
-//                return new String[]{"Invalid Route"};
-//            }
-//            CardinalDirection newDir = r.getDirection(from);
-//            Direction theDirection = CardinalDirection.turnDirection(currentDir, newDir);
-//
-//        }
-//    }
-//
-//    private static String severity(double theDouble) {
-//        if (theDouble < .33) {
-//            return "Low";
-//        }
-//        if (theDouble < .66) {
-//            return "Mild";
-//        }
-//        return "Severe";
-//    }
 }
