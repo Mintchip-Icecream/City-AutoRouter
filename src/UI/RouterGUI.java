@@ -1,5 +1,6 @@
 package UI;
 
+import Controller.Controller;
 import Map.CityMap;
 import Map.Intersection;
 import Routing.Route;
@@ -18,22 +19,23 @@ public class RouterGUI extends JFrame {
 
     private final MapFrame mapFrame;
     private final JMenu viewMenu;
+    private final Controller myCar;
 
-    public RouterGUI() throws IOException {
+    public RouterGUI(Controller theController) throws IOException {
         super("City-AutoRouter");
         this.setSize(600, 500);
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.myCar = theController;
 
         viewMenu = new JMenu("View");
         this.setJMenuBar(buildMenuBar());
 
-        this.mapFrame = new MapFrame();
+        this.mapFrame = new MapFrame(theController);
         this.add(this.mapFrame);
 
 
-        CityMap newCM = new CityMap(Files.readString(Path.of("src/simMap.txt")));
-        this.mapFrame.setCityMap(newCM);
+//        this.mapFrame.setCityMap(myCar.getMap());
     }
 
     private JMenuBar buildMenuBar() {

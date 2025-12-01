@@ -1,7 +1,6 @@
 package Simulation;
 
-import DB.DBOps;
-import Map.CardinalDirection;
+import Controller.DBOps;
 import Map.CityMap;
 import Map.Intersection;
 import Map.Road;
@@ -19,7 +18,7 @@ import java.util.Random;
  * each intersection and road on the map.
  *
  * @author June Flores
- * @version 11/15/25
+ * @version 11/30/25
  */
 public class EnvironmentSimulator {
     /**
@@ -405,7 +404,7 @@ public class EnvironmentSimulator {
     }
 
     /**
-     * Simulates the risk of all the intersections in the map for one specific condition. Adds all of the intersections
+     * Simulates the risk of all the intersections in the map for one specific condition. Adds all the intersections
      * and their risk level for the condition in the HashMap of the conditions.
      * (Idea of implementation: select random intersection as the epicenter of a condition cluster and a random radius
      * then traverse around the radius until either the limit, which is theDistance, is reached, or we've traversed
@@ -469,6 +468,15 @@ public class EnvironmentSimulator {
         }
     }
 
+    /**
+     * Adds a condition to the map. This method accounts for if the intersection already has a condition value,
+     * by increasing the existing condition by a multiplicative percentage (increasing by a small percentage,
+     * it still increases by a lot if the condition amount is lot).
+     *
+     * @param inter1 The intersection that will be put into the condition map.
+     * @param theAmount The risk level of the intersection according to 1 condition.
+     * @param theMap The hashmap of <Intersection, SpecificCondition> that the intersection and condition will be put.
+     */
     private void addToCondition(final Intersection inter1, final double theAmount,
                                 final HashMap<Intersection, Double> theMap) {
         if (theMap.containsKey(inter1)) {
@@ -481,6 +489,20 @@ public class EnvironmentSimulator {
         }
     }
 
+    /**
+     * Creates a "problem zone" around an origin intersection, and will apply decayed conditions in a radius around
+     * the origin intersection using BFS to traverse to intersections within the radius. Has a minimum condition to
+     * ensure that all conditions in the problem zone will be more than "light".
+     *
+     * @param theRadius The radius around the intersection we will travel, when the search distance exceeds the
+     *                  radius, cluster creation also stops.
+     * @param theOrigin The node that's the "epicenter" of the condition cluster, nodes close will resemble its
+     *                  condition while nodes farther away will be close to the condition minimum.
+     * @param theOriginCondition The condition risk of the origin node.
+     * @param theConditionMin The minimum risk of an intersection that's within radius of the origin.
+     * @param theConditionMap The map that we will place the results of the simulation into.
+     * @return the search distance traversed by the method, which is around or slightly above the radius.
+     */
     private double makeConditionCluster(final double theRadius, final Intersection theOrigin,
                                         final double theOriginCondition, final double theConditionMin,
                                         final HashMap<Intersection, Double> theConditionMap) {
@@ -529,8 +551,15 @@ public class EnvironmentSimulator {
         return searchDistance;
     }
 
-
-    // get the distance matrix [North, South, East, West] of an intersection using previous distance matrix
+    /**
+     * get the distance vector [North, South, East, West] of an intersection using previous distance matrix with
+     * the traversed road's distance appended to it.
+     *
+     * @param theFrom The previous intersection, who's road connecting it to the current intersection will be computed.
+     * @param theTo The current intersection whose distance from the origin will be calculated.
+     * @param distances The array of distances from the previous intersection.
+     * @return A distance vector [North, South, East, West] of an intersection's distance to some origin node.
+     */
     private double[] addCartesianDistances(final Intersection theFrom, final Intersection theTo,
                                            final double[] distances) {
         Road r = CityMap.getRoad(theFrom, theTo);
@@ -551,12 +580,26 @@ public class EnvironmentSimulator {
         return result;
     }
 
+    /**
+     * Calculates the Euclidean distance of an intersection according to its distances from an origin node.
+     *
+     * @param theDistances A distance vector [North, South, East, West] of an intersection's distance to an origin node.
+     * @return the Euclidean distance of the distance vector.
+     */
     private double distanceFromOrigin(final double[] theDistances) {
         double theX = Math.abs(theDistances[NORTH_DISTANCE_INDEX] - theDistances[SOUTH_DISTANCE_INDEX]);
         double theY = Math.abs(theDistances[EAST_DISTANCE_INDEX] - theDistances[WEST_DISTANCE_INDEX]);
         return Math.sqrt((theX * theX) + (theY * theY));
     }
 
+    /**
+     * Determines if a distance vector is within radius by comparing the Euclidean distance of the distance vector
+     * to the radius.
+     *
+     * @param theDistance
+     * @param theRadius
+     * @return
+     */
     private boolean withinDistance(final double theDistance, final double theRadius) {
         return theDistance <= theRadius;
     }

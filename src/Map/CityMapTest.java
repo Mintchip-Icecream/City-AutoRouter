@@ -107,7 +107,7 @@ class CityMapTest {
 
     @Test
     void getDefaultMapID() {
-        assertEquals(1, CityMap.getDefaultMapID());
+        assertEquals(3, CityMap.getDefaultMapID());
     }
 
     /**

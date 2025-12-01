@@ -128,12 +128,19 @@ class EnvironmentSimulatorTest {
         }
     }
 
+    /**
+     * Tests if we get a different default condition from the conditions when passing an invalid intersection
+     * (intersection from a different map), or if we get the default condition like expected.
+     */
     @Test
     void getConditionsDefault() {
         EnvironmentSimulator newSim = new EnvironmentSimulator(myDefaultMap, RNG_SEED);
         assertEquals(myDefaultCondition, newSim.getCondition(myTestMap.getIntersection(2)));
     }
 
+    /**
+     * Tests if the seed environment simulator gets the correct seed, and if it matches what it's initialized to.
+     */
     @Test
     void getSeed() {
         Random rand = new Random();
@@ -142,18 +149,29 @@ class EnvironmentSimulatorTest {
         assertEquals(rngSeed, newSim.getSeed());
     }
 
+    /**
+     * Tests if the simulator can validate if a map is equal to the map it has.
+     */
     @Test
     void compareMap() {
         EnvironmentSimulator theSim = new EnvironmentSimulator(myTestMap, RNG_SEED);
         assertTrue(theSim.compareMap(myTestMap));
     }
 
+    /**
+     * Tests if the simulator can return false when comparing a map that isn't equal to the map it's initialized with.
+     */
     @Test
     void compareMapNegative() {
         EnvironmentSimulator theSim = new EnvironmentSimulator(myTestMap, RNG_SEED);
         assertFalse(theSim.compareMap(myDefaultMap));
     }
 
+    /**
+     * Tests if the simulator can validate if a map that doesn't have the exact same memory address is equal to the
+     * map it's initialized under.
+     * @throws IOException
+     */
     @Test
     void compareMapSameFile() throws IOException {
         EnvironmentSimulator theSim = new EnvironmentSimulator(myTestMap, RNG_SEED);

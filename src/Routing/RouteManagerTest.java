@@ -31,7 +31,8 @@ class RouteManagerTest {
      */
     private static CityMap myTestMap;
     /**
-     * The default map with 74 intersections, the map loaded from the DB at ID = 1.
+     * The default map with 74 intersections, the map loaded from the DB at ID = 1. Not default anymore but this is what
+     * we'll test with since we made some tweaks to it.
      */
     private static CityMap myDefaultMap;
     /**
@@ -52,7 +53,7 @@ class RouteManagerTest {
     @BeforeAll
     static void setupMap() throws IOException {
         myTestMap = new CityMap(Files.readString(Path.of("src/testMap.txt")));
-        myDefaultMap = new CityMap();
+        myDefaultMap = new CityMap(1);
         myTestSim = new EnvironmentSimulator(myTestMap, 100L);
         myDefaultMapSim = new EnvironmentSimulator(myDefaultMap, 100L);
     }
