@@ -13,7 +13,7 @@ import Simulation.SafetyChecker;
  * Manager class for creating and processing routes within a certain map and environment simulation.
  *
  * @author June Flores
- * @version 11/15/25
+ * @version 11/30/25
  */
 public class RouteManager {
     /**

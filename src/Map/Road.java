@@ -8,7 +8,7 @@ import java.util.Objects;
  * distance, and direction.
  *
  * @author June Flores
- * @version 11/15/25
+ * @version 11/30/25
  */
 public class Road {
     /**

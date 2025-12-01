@@ -1,4 +1,4 @@
-package DB;
+package Controller;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -6,15 +6,12 @@ import Map.CityMap;
 import Routing.Route;
 import Routing.RouteManager;
 import Simulation.EnvironmentSimulator;
-import Simulation.SafetyChecker;
 import org.junit.jupiter.api.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.*;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * Test class for the DBOps class. Each tests the critical functions, like if we can save routes/maps/sims,

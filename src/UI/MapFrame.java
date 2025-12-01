@@ -1,10 +1,13 @@
 package UI;
 
+import Controller.Controller;
 import Map.CityMap;
 import Map.Intersection;
 import Map.Road;
 import Map.CardinalDirection;
 import Routing.Route;
+import Simulation.Conditions;
+import Simulation.SafetyChecker;
 
 import javax.swing.JPanel;
 import java.awt.BasicStroke;
@@ -29,6 +32,13 @@ public class MapFrame extends JPanel {
     private static final Color TEXT = new Color(0x000000);
     private static final Color LINE = new Color(0x0000F0);
     private static final Color ENDPOINT = new Color(0xF000F0);
+    private static final Color LOCATION = new Color(0x262726);
+    private static final Color OBS_DANGER = new Color(0xFD5B38);
+    private static final Color TRAF_DANGER = new Color(0xFFA235);
+    private static final Color WEATHER_DANGER = new Color(0x1F9AFF);
+    private static final double MINIMUM_ZOOM = 16.0;
+
+
 
     private CityMap myCityMap;
     final private List<Route> myRoutes;
@@ -37,17 +47,23 @@ public class MapFrame extends JPanel {
     final private Map<Route, Color> myRouteColors;
     private Intersection myStart;
     private Intersection myEnd;
+    private Intersection myCurrentlyHoveredIntersection;
+    private Map<Intersection, Point> myIntersections;
+    private Controller myCar;
+//    private boolean mapLoaded = false;
 
     private int myX = 50;
     private int myY = 100;
-    private int myZoom = 32;
+    private int myZoom = 16;
     private double myZoomFactor = 5;
 
-    public MapFrame() {
+    public MapFrame(Controller theController) {
         myRoutes = new LinkedList<>();
         myVisibleRoutes = new HashSet<>();
         myRouteRoads = new HashMap<>();
         myRouteColors = new HashMap<>();
+        myCar = theController;
+        myCityMap = myCar.getMap();
         setBackground(BACKGROUND);
         MouseAdapter ma = new MapMouseAdapter();
         addMouseListener(ma);
@@ -116,6 +132,19 @@ public class MapFrame extends JPanel {
         theGraphics.fillOval(myX + theIntersectionPos.x * myZoom - 4, myY + theIntersectionPos.y * myZoom - 4, 10, 10);
     }
 
+    /**
+     * Draws the currently hovered intersection and it's ID
+     * @param theGraphics
+     */
+    private void drawIntersectionID(final Graphics2D theGraphics) {
+        if (myCurrentlyHoveredIntersection == null) {
+            return;
+        }
+        Point point = myIntersections.get(myCurrentlyHoveredIntersection);
+        theGraphics.drawString("" + myCurrentlyHoveredIntersection.getID(),
+                myX + point.x * myZoom - 4, myY + point.y * myZoom - 5);
+    }
+
     @Override
     public void paintComponent(final Graphics theGraphics) {
         super.paintComponent(theGraphics);
@@ -124,7 +153,9 @@ public class MapFrame extends JPanel {
         if(myCityMap == null) {
             return;
         }
-
+        if (myCurrentlyHoveredIntersection != null) {
+            drawIntersectionID(g2d);
+        }
         final Queue<Intersection> queue = new LinkedList<>();
         final Map<Intersection, Point> intersectionPositions = new HashMap<>();
 
@@ -148,13 +179,26 @@ public class MapFrame extends JPanel {
                     // new intersection, queue it for drawing
                     queue.add(other);
                     // and assign its position on the map
-                    intersectionPositions.put(other, offset(road.getDirection(current), currentPos));
+                    intersectionPositions.put(other, offset(road.getDirection(current), currentPos, road));
                 } else {
                     // previously seen intersection, draw a road back to it
                     g2d.setPaint(LINE);
 
                     final List<Color> lines = new LinkedList<>();
-                    lines.add(LINE);
+
+                    // draws the road line according to the environment simulation
+                    Conditions roadCon = myCar.getEnvironment().getCondition(road);
+                    double worstCondition = Math.max(roadCon.getWeatherFactor(),
+                            Math.max(roadCon.getTrafficDensity(), roadCon.getObstacleSeverity()));
+                    if (worstCondition == roadCon.getTrafficDensity()) {
+                        lines.add(TRAF_DANGER);
+                    } else if (worstCondition == roadCon.getWeatherFactor()){
+                        lines.add(WEATHER_DANGER);
+                    } else if (worstCondition == roadCon.getObstacleSeverity()) {
+                        lines.add(OBS_DANGER);
+                    } else {
+                        lines.add(LINE);
+                    }
 
                     // draw a line for each route that crosses this road
                     for(Route route : myRoutes) {
@@ -175,7 +219,11 @@ public class MapFrame extends JPanel {
             if(current.equals(myStart) || current.equals(myEnd)) {
                 g2d.setPaint(ENDPOINT);
             }
-            drawIntersection(g2d, currentPos);
+            if (current.isLocation()) {
+                g2d.setPaint(LOCATION);
+                drawIntersection(g2d, currentPos);
+            }
+            myIntersections = intersectionPositions;
         }
     }
 
@@ -192,13 +240,21 @@ public class MapFrame extends JPanel {
      * @param thePoint      the starting point
      * @return  a new Point object
      */
-    private static Point offset(final CardinalDirection theDirection, final Point thePoint) {
+    private static Point offset(final CardinalDirection theDirection, final Point thePoint, final Road theRoad) {
         return switch(theDirection) {
-            case NORTH -> new Point(thePoint.x, thePoint.y - 1);
-            case SOUTH -> new Point(thePoint.x, thePoint.y + 1);
-            case EAST -> new Point(thePoint.x + 1, thePoint.y);
-            case WEST -> new Point(thePoint.x - 1, thePoint.y);
+            case NORTH -> new Point(thePoint.x, thePoint.y - roadNormalized(theRoad));
+            case SOUTH -> new Point(thePoint.x, thePoint.y + roadNormalized(theRoad));
+            case EAST -> new Point(thePoint.x + roadNormalized(theRoad), thePoint.y);
+            case WEST -> new Point(thePoint.x - roadNormalized(theRoad), thePoint.y);
         };
+    }
+
+    private static int roadNormalized(Road theRoad) {
+        int result = (int) Math.round(theRoad.getLength() / 50);
+        if (result == 0) {
+            return 1;
+        }
+        return result;
     }
 
     private void adjustView(final int theDeltaX, final int theDeltaY) {
@@ -208,12 +264,13 @@ public class MapFrame extends JPanel {
     }
 
     private void adjustZoom(final double theDeltaZoom) {
-        this.myZoomFactor = Math.clamp(this.myZoomFactor - theDeltaZoom / 4, 1.0, 8.0);
+        this.myZoomFactor = Math.clamp(this.myZoomFactor - theDeltaZoom / 4, 1.0, MINIMUM_ZOOM);
         this.myZoom = (int) Math.pow(2, this.myZoomFactor);
         this.repaint();
     }
 
     private class MapMouseAdapter extends MouseAdapter {
+        private int hoverRadius = 10; // radius around point for hover detection.
         private int myCurrentX = 0;
         private int myCurrentY = 0;
 
@@ -223,6 +280,13 @@ public class MapFrame extends JPanel {
         public void mousePressed(final MouseEvent theEvent) {
             this.myCurrentX = theEvent.getX();
             this.myCurrentY = theEvent.getY();
+            for (Intersection i : myIntersections.keySet()) {
+                if (atPoint(myIntersections.get(i))) {
+                    myCurrentlyHoveredIntersection = i;
+                    repaint();
+                    break;
+                }
+            }
         }
 
         @Override
@@ -235,6 +299,12 @@ public class MapFrame extends JPanel {
         @Override
         public void mouseWheelMoved(final MouseWheelEvent theEvent) {
             MapFrame.this.adjustZoom(theEvent.getWheelRotation());
+        }
+
+        private boolean atPoint(Point thePoint) {
+            double distance = Math.sqrt(Math.pow(myCurrentX - (myX + thePoint.x * myZoom - 4), 2) +
+                    Math.pow(myCurrentY - (myY + thePoint.y * myZoom - 4), 2));
+            return distance <= hoverRadius;
         }
     }
 }

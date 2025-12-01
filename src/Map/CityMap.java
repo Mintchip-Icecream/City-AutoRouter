@@ -1,6 +1,6 @@
 package Map;
 
-import DB.DBOps;
+import Controller.DBOps;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -62,7 +62,7 @@ public final class CityMap {
     /**
      * The map ID of our default map (the map in simMap.txt), always one
      */
-    private static final int DEFAULT_MAP_ID = 1;
+    private static final int DEFAULT_MAP_ID = 3;
     /**
      * HashMap containing the intersections. We access the intersections using their ID number.
      */
@@ -72,7 +72,7 @@ public final class CityMap {
      */
     private final ArrayList<Road> myRoads = new ArrayList<>();
     /**
-     * Default constructor for a CityMap that uses the default map (ID = 1)
+     * Default constructor for a CityMap that uses the default map (ID = 2)
      */
     public CityMap() {
         this(getDefaultMapID());

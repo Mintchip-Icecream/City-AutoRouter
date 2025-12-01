@@ -1,4 +1,4 @@
-package DB;
+package Controller;
 
 import Map.CityMap;
 import Map.Intersection;
@@ -7,16 +7,36 @@ import Routing.Route;
 import Simulation.Conditions;
 import Simulation.EnvironmentSimulator;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
+/**
+ * Singleton class for handling the connections and queries to the database.
+ *
+ * @author June Flores
+ * @version 11/30/2025
+ */
 public class DBOps {
-    private Connection myConnection;
-    private static DBOps uniqueInstance = new DBOps();
+    /**
+     * The unique instance of the class.
+     */
+    private static final DBOps UNIQUE_INSTANCE = new DBOps();
 
+    /**
+     * The connection to the database that we make queries and transactions into.
+     */
+    private Connection myConnection;
+
+    /**
+     * Instantiates the DBOps class, setting the database connection to our sqlite datadb file.
+     */
     private DBOps() {
         try {
             myConnection = DriverManager.getConnection("jdbc:sqlite:database/datadb.db");
@@ -27,16 +47,107 @@ public class DBOps {
         }
     }
 
+    /**
+     * Returns the instance of the class so that clients can access the class.
+     * Used by the CityMap class to load the saved intersections.
+     *
+     * @return the unique instance of this class.
+     */
     public static synchronized DBOps getInstance() {
-        return uniqueInstance;
+        return UNIQUE_INSTANCE;
+    }
+
+    /**
+     * Returns the ResultSet of the intersections that have the mapID given.
+     *
+     * @param theMapID the mapID that we want the intersections from.
+     * @return the ResultSet of the intersections that have the mapID given.
+     */
+    public synchronized ResultSet intersectionList(final int theMapID) {
+        try {
+            PreparedStatement interStmt = myConnection.prepareStatement("SELECT * FROM Intersections where mapID = ?");
+            interStmt.setInt(1, theMapID);
+            return interStmt.executeQuery();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Returns the ResultSet of the roads that have the mapID given.
+     * Used by the CityMap class to load the saved roads.
+     *
+     * @param theMapID the mapID that we want the roads from.
+     * @return the ResultSet of the roads that have the mapID given.
+     */
+    public synchronized ResultSet roadList(final int theMapID) {
+        try {
+            PreparedStatement roadStmt = myConnection.prepareStatement("SELECT * FROM Roads where mapID = ?");
+            roadStmt.setInt(1, theMapID);
+            return roadStmt.executeQuery();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Returns the row in the database that has the passed simID, needed for getting the RNG seed for the simulation.
+     * Used by the Simulator to instantiate the RNG seed.
+     *
+     * @param theSimID the row ID of the simulation in the database.
+     * @return The row of the simulation as a ResultSet.
+     */
+    public synchronized ResultSet loadSimTuple(final int theSimID) {
+        try {
+            PreparedStatement simStmt = myConnection.prepareStatement("SELECT * FROM Simulation where simID = ?");
+            simStmt.setInt(1, theSimID);
+            return simStmt.executeQuery();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Loads the set of intersections and their conditions in the simulator and updates the Simulation's use date.
+     * Used by the EnvironmentSimulator class to load the conditions.
+     *
+     * @param theSimID
+     * @return A ResultSet with (interID, weatherRisk, obstacleRisk, trafficRisk)
+     * detailing the conditions in the simulation.
+     */
+    public synchronized ResultSet loadSim(final int theSimID) {
+        try {
+            PreparedStatement simStmt = myConnection.prepareStatement("UPDATE Simulation SET lastUsed = CURRENT_TIMESTAMP WHERE simID = ?");
+            simStmt.setInt(1, theSimID);
+            simStmt.executeUpdate();
+            myConnection.commit();
+            PreparedStatement conStmt = myConnection.prepareStatement("SELECT interID, weatherRisk, obstacleRisk, " +
+                    "trafficRisk FROM InterConditions WHERE simID = ?");
+            conStmt.setInt(1, theSimID);
+            return conStmt.executeQuery();
+        } catch (SQLException e) {
+            if (myConnection != null) {
+                try {
+                    System.err.print("Rolling Back Transaction");
+                    myConnection.rollback();
+                } catch (SQLException rollbackError) {
+                    rollbackError.printStackTrace();
+                }
+            }
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
      * Returns a list of map IDs and their respective name in descending order (most recently added map first)
      *
-     * @return a list of map IDs and the name of each map
+     * @return an ordered map of mapIDs and the name of each map. Null if an error occurs.
      */
-    public synchronized Map<Integer, String> getMaps() {
+    synchronized Map<Integer, String> getMaps() {
         try {
             PreparedStatement stmt = myConnection.prepareStatement("SELECT * FROM Map ORDER BY mapID DESC");
             ResultSet rs = stmt.executeQuery();
@@ -55,9 +166,10 @@ public class DBOps {
      * Returns a set of routes as their Route ID and a 2 integer list representing the first and last intersections,
      * this is for display purposes, when actually loading a route to use, use the loadRoute method.
      *
-     * @return a map of routes and their first and last intersections ordered by most recently used.
+     * @return a map of routes and their first and last intersections ordered by most recently used. Null if an error
+     * occurs.
      */
-    public synchronized Map<Integer, int[]> getRoutes() {
+    synchronized Map<Integer, int[]> getRoutes() {
         try {
             PreparedStatement rtStmt = myConnection.prepareStatement("SELECT routeID FROM Routes ORDER BY lastUsed DESC");
             ResultSet routes = rtStmt.executeQuery();
@@ -90,11 +202,11 @@ public class DBOps {
     }
 
     /**
-     * Returns all of the simulations by order of most recently used.
+     * Returns all the simulations by order of most recently used.
      *
-     * @return a map of simulationIDs and the date they were used.
+     * @return a map of simulationIDs and the date they were used. Null if an error is found.
      */
-    public synchronized Map<Integer, String> getSimulations() {
+    synchronized Map<Integer, String> getSimulations() {
         try {
             PreparedStatement stmt = myConnection.prepareStatement("SELECT simID, date(lastUsed) FROM Simulation ORDER BY lastUsed DESC");
             ResultSet rs = stmt.executeQuery();
@@ -109,8 +221,15 @@ public class DBOps {
         return null;
     }
 
-    // plan: Route takes a txt, generates a map from it,
-    public synchronized CityMap saveMap(String theMapString, String theMapName) {
+    /**
+     * Saves a map according to the map constructing .txt file, then returns the map that's constructed from the
+     * file.
+     *
+     * @param theMapString The contents of the .txt file containing the map.
+     * @param theMapName The name of the map that will be displayed when getting it from the database.
+     * @return the CityMap instance that is saved according to the input text. Null if saving fails.
+     */
+    synchronized CityMap saveMap(String theMapString, String theMapName) {
         try {
             PreparedStatement mapStmt = myConnection.prepareStatement("INSERT INTO Map (mapName) VALUES (?)");
             mapStmt.setString(1, theMapName);
@@ -157,7 +276,15 @@ public class DBOps {
         return null;
     }
 
-    public synchronized void saveSim(EnvironmentSimulator theSim, int theMapID) {
+    /**
+     * Saves an EnvironmentSimulator instance according to the mapID passed. If the map does not correlate to the
+     * map instance in the simulation, then a foreign key constraint might be violated. But that's the job of the
+     * controller to make sure it doesn't pass an EnvironmentSimulator with the wrong map.
+     *
+     * @param theSim The EnvironmentSimulator that will be saved to the database.
+     * @param theMapID The mapID that the simulation will be associated with the simulation.
+     */
+    synchronized void saveSim(EnvironmentSimulator theSim, int theMapID) {
         try {
             PreparedStatement simStmt = myConnection.prepareStatement("INSERT INTO Simulation (rngSeed) VALUES (?)");
             simStmt.setLong(1, theSim.getSeed());
@@ -193,7 +320,14 @@ public class DBOps {
         }
     }
 
-    public synchronized void saveRoute(final Route theRoute, final int theMapID) {
+    /**
+     * Saves a route that exists on a map. The intersections in the route should correlate the intersections
+     * on the map whose ID is passed, otherwise a foreign key constraint may be violated and it won't save.
+     *
+     * @param theRoute The route that's saved.
+     * @param theMapID The map that the route takes place in.
+     */
+    synchronized void saveRoute(final Route theRoute, final int theMapID) {
         try {
             PreparedStatement savedRoute = myConnection.prepareStatement("INSERT INTO Routes (lastUsed) VALUES (CURRENT_TIMESTAMP)");
             savedRoute.executeUpdate();
@@ -226,7 +360,13 @@ public class DBOps {
         }
     }
 
-    public synchronized int[] loadRoute(final int theRouteID) {
+    /**
+     * Loads the intersectionID list from a route saved in the DB.
+     *
+     * @param theRouteID the row ID of the route in the database.
+     * @return the ordered intersectionID array of the route associated with the routeID.
+     */
+    synchronized int[] loadRoute(final int theRouteID) {
         try {
             PreparedStatement routeUpdate = myConnection.prepareStatement("UPDATE Routes SET lastUsed = CURRENT_TIMESTAMP WHERE routeID = ?");
             routeUpdate.setInt(1, theRouteID);
@@ -255,63 +395,12 @@ public class DBOps {
         return null;
     }
 
-    public synchronized ResultSet intersectionList(final int theMapID) {
-        try {
-            PreparedStatement interStmt = myConnection.prepareStatement("SELECT * FROM Intersections where mapID = ?");
-            interStmt.setInt(1, theMapID);
-            return interStmt.executeQuery();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    public synchronized ResultSet roadList(final int theMapID) {
-        try {
-            PreparedStatement roadStmt = myConnection.prepareStatement("SELECT * FROM Roads where mapID = ?");
-            roadStmt.setInt(1, theMapID);
-            return roadStmt.executeQuery();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    public synchronized ResultSet loadSimTuple(final int theSimID) {
-        try {
-            PreparedStatement simStmt = myConnection.prepareStatement("SELECT * FROM Simulation where simID = ?");
-            simStmt.setInt(1, theSimID);
-            return simStmt.executeQuery();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    public synchronized ResultSet loadSim(final int theSimID) {
-        try {
-            PreparedStatement simStmt = myConnection.prepareStatement("UPDATE Simulation SET lastUsed = CURRENT_TIMESTAMP WHERE simID = ?");
-            simStmt.setInt(1, theSimID);
-            simStmt.executeUpdate();
-            myConnection.commit();
-            PreparedStatement conStmt = myConnection.prepareStatement("SELECT interID, weatherRisk, obstacleRisk, " +
-                    "trafficRisk FROM InterConditions WHERE simID = ?");
-            conStmt.setInt(1, theSimID);
-            return conStmt.executeQuery();
-        } catch (SQLException e) {
-            if (myConnection != null) {
-                try {
-                    System.err.print("Rolling Back Transaction");
-                    myConnection.rollback();
-                } catch (SQLException rollbackError) {
-                    rollbackError.printStackTrace();
-                }
-            }
-            e.printStackTrace();
-        }
-        return null;
-    }
-
+    /**
+     * Redirects the DBOps instance to use the connection passed. Used by the DBOpsTest class to make the instance
+     * use the test DB instead of the database that users will use.
+     *
+     * @param theConnection The connection to an SQL database that the DBOps instance will use.
+     */
     synchronized void setConnection(Connection theConnection) {
         this.myConnection = theConnection;
     }

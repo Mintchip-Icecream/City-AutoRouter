@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS "InterConditions" (
 	FOREIGN KEY("simID") REFERENCES "Simulation"("simID") ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "Intersections" (
-	"interID"	INTEGER UNIQUE,
+	"interID"	INTEGER,
 	"mapID"	INTEGER,
 	"isLocation"	INTEGER DEFAULT 0,
 	PRIMARY KEY("interID","mapID"),
