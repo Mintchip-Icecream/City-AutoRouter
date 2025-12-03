@@ -17,12 +17,28 @@ import Map.Road;
  * @version 11/15/25
  */
 public class Route {
+    /**
+     * The intersections that comprise the route, from the first location, traversing into the destination location.
+     */
     private final Intersection[] myIntersections;
 
+    /**
+     * Constructs a route from an ordered set of Intersection instances. Assuming that these intersections
+     * are connected to each other, but if they're out of order that's the router's fault.
+     *
+     * @param theIntersections the ordered list of Intersection objects.
+     */
     Route(final Intersection[] theIntersections) {
         this.myIntersections = theIntersections;
     }
 
+    /**
+     * Constructs a route from a set of intersection IDs on a map instance. Assumes that the intersections
+     * listed can be found on the map through their ID number.
+     *
+     * @param theIDs a list of ID numbers representing intersections
+     * @param theMap
+     */
     Route(final int[] theIDs, final CityMap theMap) {
         Intersection[] theIntersections = new Intersection[theIDs.length];
         for (int i = 0; i < theIDs.length; i++) {
@@ -35,10 +51,22 @@ public class Route {
         myIntersections = theIntersections;
     }
 
+    /**
+     * Returns the intersections that make up the route, from the first at the 0th index to the last intersection at
+     * the nth index.
+     *
+     * @return an array of intersections representing the route.
+     */
     public Intersection[] getRoute() {
         return myIntersections.clone();
     }
 
+    /**
+     * Returns an array of the ID numbers of each intersection in the route, ordered from the first to the last
+     * intersection in the route.
+     *
+     * @return an array of intersection ID numbers.
+     */
     public int[] getRouteIDs() {
         int[] result = new int[myIntersections.length];
         for (int i = 0; i < myIntersections.length; i++) {
@@ -47,6 +75,12 @@ public class Route {
         return result;
     }
 
+    /**
+     * Returns the text representation of the route as a series of directions to the user (ex. "From location a,
+     * turn right after 500 meters to location b").
+     *
+     * @return The text representation of the route as human-readable instructions.
+     */
     public String toDirections() {
         StringBuilder sb = new StringBuilder();
         Intersection from = myIntersections[0];
@@ -89,11 +123,19 @@ public class Route {
         return sb.toString();
     }
 
+    /**
+     * Returns the string representation of the route as a set of intersections (their ID numbers).
+     *
+     * @return the route string as an array of the ID numbers in the route.
+     */
     @Override
     public String toString() {
         return Arrays.toString(getRouteIDs());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean equals(final Object theOther) {
         if (this == theOther) {
@@ -112,6 +154,9 @@ public class Route {
         return Arrays.equals(this.getRouteIDs(), otherRoute.getRouteIDs());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int hashCode() {
         return Arrays.hashCode(myIntersections);

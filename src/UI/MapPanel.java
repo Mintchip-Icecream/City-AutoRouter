@@ -1,10 +1,13 @@
 package UI;
 
+import Controller.Controller;
 import Map.CityMap;
 import Map.Intersection;
 import Map.Road;
 import Map.CardinalDirection;
 import Routing.Route;
+import Simulation.Conditions;
+import Simulation.SafetyChecker;
 
 import java.awt.RenderingHints;
 import java.awt.Stroke;
@@ -35,6 +38,13 @@ public class MapPanel extends JPanel {
     private static final Color ENDPOINT = new Color(0xF000F0);
     private static final Stroke MAP_STROKE = new BasicStroke(1.25f);
     private static final Stroke ROUTE_STROKE = new BasicStroke(2.25f);
+    private static final Color LOCATION = new Color(0x262726);
+    private static final Color OBS_DANGER = new Color(0xFD5B38);
+    private static final Color TRAF_DANGER = new Color(0xFFA235);
+    private static final Color WEATHER_DANGER = new Color(0x1F9AFF);
+    private static final double MINIMUM_ZOOM = 16.0;
+
+
 
     private CityMap myCityMap;
     final private List<Route> myRoutes;
@@ -43,17 +53,22 @@ public class MapPanel extends JPanel {
     final private Map<Route, Color> myRouteColors;
     private Intersection myStart;
     private Intersection myEnd;
+    private Intersection myCurrentlyHoveredIntersection;
+    private Map<Intersection, Point> myIntersections;
+    private Controller myCar;
 
     private int myX = 50;
     private int myY = 100;
-    private int myZoom = 32;
+    private int myZoom = 16;
     private double myZoomFactor = 5;
 
-    public MapPanel() {
+    public MapPanel(Controller theController) {
         myRoutes = new LinkedList<>();
         myVisibleRoutes = new HashSet<>();
         myRouteRoads = new HashMap<>();
         myRouteColors = new HashMap<>();
+        myCar = theController;
+        myCityMap = myCar.getMap();
         setBackground(BACKGROUND);
         MouseAdapter ma = new MapMouseAdapter();
         addMouseListener(ma);
@@ -61,9 +76,6 @@ public class MapPanel extends JPanel {
         addMouseWheelListener(ma);
     }
 
-    public void setCityMap(final CityMap theCityMap) {
-        myCityMap = theCityMap;
-    }
     public void setRoutes(final Route[] theRoutes) {
         myRoutes.clear();
         myVisibleRoutes.clear();
@@ -136,6 +148,19 @@ public class MapPanel extends JPanel {
             radius * 2, radius * 2));
     }
 
+    /**
+     * Draws the currently hovered intersection and it's ID
+     * @param theGraphics
+     */
+    private void drawIntersectionID(final Graphics2D theGraphics) {
+        if (myCurrentlyHoveredIntersection == null) {
+            return;
+        }
+        Point point = myIntersections.get(myCurrentlyHoveredIntersection);
+        theGraphics.drawString("" + myCurrentlyHoveredIntersection.getID(),
+                myX + point.x * myZoom - 4, myY + point.y * myZoom - 5);
+    }
+
     @Override
     public void paintComponent(final Graphics theGraphics) {
         super.paintComponent(theGraphics);
@@ -146,6 +171,9 @@ public class MapPanel extends JPanel {
         final Graphics2D g2d = (Graphics2D) theGraphics;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+        if (myCurrentlyHoveredIntersection != null) {
+            drawIntersectionID(g2d);
+        }
         final Queue<Intersection> queue = new LinkedList<>();
         final Map<Intersection, Point> intersectionPositions = new HashMap<>();
 
@@ -165,11 +193,24 @@ public class MapPanel extends JPanel {
                     // new intersection, queue it for drawing
                     queue.add(other);
                     // and assign its position on the map
-                    intersectionPositions.put(other, offset(road.getDirection(current), currentPos));
+                    intersectionPositions.put(other, offset(road.getDirection(current), currentPos, road));
                 } else {
                     // previously seen intersection, draw a road back to it
-                    g2d.setPaint(LINE);
                     g2d.setStroke(MAP_STROKE);
+
+                    // draws the road line according to the environment simulation
+                    Conditions roadCon = myCar.getEnvironment().getCondition(road);
+                    double worstCondition = Math.max(roadCon.getWeatherFactor(),
+                            Math.max(roadCon.getTrafficDensity(), roadCon.getObstacleSeverity()));
+                    if (worstCondition == roadCon.getTrafficDensity()) {
+                        g2d.setPaint(TRAF_DANGER);
+                    } else if (worstCondition == roadCon.getWeatherFactor()){
+                        g2d.setPaint(WEATHER_DANGER);
+                    } else if (worstCondition == roadCon.getObstacleSeverity()) {
+                        g2d.setPaint(OBS_DANGER);
+                    } else {
+                        g2d.setPaint(LINE);
+                    }
                     drawLine(g2d, currentPos, intersectionPositions.get(other), 0);
 
                     // draw a line for each route that crosses this road
@@ -193,12 +234,15 @@ public class MapPanel extends JPanel {
         // draw intersections after roads so they're layered on top of the lines
         for(Map.Entry<Intersection, Point> entry : intersectionPositions.entrySet()) {
             final Intersection intersection = entry.getKey();
-            g2d.setPaint(LINE);
             if(intersection.equals(myStart) || intersection.equals(myEnd)) {
                 g2d.setPaint(ENDPOINT);
+                drawIntersection(g2d, entry.getValue());
+            } else if (intersection.isLocation()) {
+                g2d.setPaint(LOCATION);
+                drawIntersection(g2d, entry.getValue());
             }
-            drawIntersection(g2d, entry.getValue());
         }
+        myIntersections = intersectionPositions;
     }
 
     private static Intersection getOther(final Road theRoad, final Intersection theOrigin) {
@@ -214,13 +258,21 @@ public class MapPanel extends JPanel {
      * @param thePoint      the starting point
      * @return  a new Point object
      */
-    private static Point offset(final CardinalDirection theDirection, final Point thePoint) {
+    private static Point offset(final CardinalDirection theDirection, final Point thePoint, final Road theRoad) {
         return switch(theDirection) {
-            case NORTH -> new Point(thePoint.x, thePoint.y - 1);
-            case SOUTH -> new Point(thePoint.x, thePoint.y + 1);
-            case EAST -> new Point(thePoint.x + 1, thePoint.y);
-            case WEST -> new Point(thePoint.x - 1, thePoint.y);
+            case NORTH -> new Point(thePoint.x, thePoint.y - roadNormalized(theRoad));
+            case SOUTH -> new Point(thePoint.x, thePoint.y + roadNormalized(theRoad));
+            case EAST -> new Point(thePoint.x + roadNormalized(theRoad), thePoint.y);
+            case WEST -> new Point(thePoint.x - roadNormalized(theRoad), thePoint.y);
         };
+    }
+
+    private static int roadNormalized(Road theRoad) {
+        int result = (int) Math.round(theRoad.getLength() / 50);
+        if (result == 0) {
+            return 1;
+        }
+        return result;
     }
 
     private void adjustView(final int theDeltaX, final int theDeltaY) {
@@ -230,12 +282,13 @@ public class MapPanel extends JPanel {
     }
 
     private void adjustZoom(final double theDeltaZoom) {
-        this.myZoomFactor = Math.clamp(this.myZoomFactor - theDeltaZoom / 4, 1.0, 8.0);
+        this.myZoomFactor = Math.clamp(this.myZoomFactor - theDeltaZoom / 4, 1.0, MINIMUM_ZOOM);
         this.myZoom = (int) Math.pow(2, this.myZoomFactor);
         this.repaint();
     }
 
     private class MapMouseAdapter extends MouseAdapter {
+        private int hoverRadius = 10; // radius around point for hover detection.
         private int myCurrentX = 0;
         private int myCurrentY = 0;
 
@@ -245,6 +298,13 @@ public class MapPanel extends JPanel {
         public void mousePressed(final MouseEvent theEvent) {
             this.myCurrentX = theEvent.getX();
             this.myCurrentY = theEvent.getY();
+            for (Intersection i : MapPanel.this.myIntersections.keySet()) {
+                if (atPoint(myIntersections.get(i))) {
+                    myCurrentlyHoveredIntersection = i;
+                    repaint();
+                    break;
+                }
+            }
         }
 
         @Override
@@ -257,6 +317,12 @@ public class MapPanel extends JPanel {
         @Override
         public void mouseWheelMoved(final MouseWheelEvent theEvent) {
             MapPanel.this.adjustZoom(theEvent.getWheelRotation());
+        }
+
+        private boolean atPoint(Point thePoint) {
+            double distance = Math.sqrt(Math.pow(myCurrentX - (myX + thePoint.x * myZoom - 4), 2) +
+                    Math.pow(myCurrentY - (myY + thePoint.y * myZoom - 4), 2));
+            return distance <= hoverRadius;
         }
     }
 }

@@ -1,12 +1,13 @@
 package UI;
 
 import Map.Intersection;
+import Controller.Controller;
 import Routing.Route;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionListener;
-import java.sql.SQLException;
+import java.io.IOException;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -16,40 +17,37 @@ import javax.swing.JOptionPane;
 
 public class RouterGUI extends JFrame {
 
-    private final Controller myController;
+    private final Controller myCar;
 
     private final MapPanel myMapPanel;
     private final SidebarPanel mySidebarPanel;
 
     private final JMenu myViewMenu;
 
-    public RouterGUI() throws SQLException {
+    public RouterGUI(Controller theController) throws IOException {
         super("City-AutoRouter");
         this.setSize(600, 500);
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.myCar = theController;
 
         this.myViewMenu = new JMenu("View");
         this.setJMenuBar(buildMenuBar());
-
-        this.myController = new Controller();
 
         this.setLayout(new GridBagLayout());
         final GridBagConstraints c = new GridBagConstraints();
         c.fill = GridBagConstraints.BOTH;
         c.weighty = 1.0;
 
-        this.myMapPanel = new MapPanel();
+        this.myMapPanel = new MapPanel(theController);
         c.gridx = 0;
         c.weightx = 0.9;
         this.add(this.myMapPanel, c);
 
-        this.mySidebarPanel = new SidebarPanel(this, this.myController);
+        this.mySidebarPanel = new SidebarPanel(this, theController);
         c.gridx = 1;
         c.weightx = 0.1;
         this.add(this.mySidebarPanel, c);
-
-        this.myMapPanel.setCityMap(myController.getMap());
     }
 
     private JMenuItem buildMenuItem(String text, ActionListener listener) {
@@ -73,7 +71,7 @@ public class RouterGUI extends JFrame {
                 "Load simulation",
                 JOptionPane.QUESTION_MESSAGE);
             try {
-                myController.loadSim(Integer.parseInt(test));
+                myCar.loadSim(Integer.parseInt(test));
             } catch (NumberFormatException e) {
                 JOptionPane.showMessageDialog(this, "Invalid ID", "Load simulation", JOptionPane.WARNING_MESSAGE);
             } catch (RuntimeException e) {
@@ -82,7 +80,7 @@ public class RouterGUI extends JFrame {
             }
         }));
         simMenu.add(buildMenuItem("Randomize simulation", theEvent -> {
-            myController.generateRandomSimulation();;
+            myCar.generateRandomSimulation();;
         }));
 
         final JMenuBar menuBar = new JMenuBar();
@@ -93,9 +91,14 @@ public class RouterGUI extends JFrame {
     }
 
     public void computeRoutes(final int theStartID, final int theEndID) {
-        final Intersection theStart = this.myController.getMap().getIntersection(theStartID);
-        final Intersection theEnd = this.myController.getMap().getIntersection(theEndID);
-        final Route[] routes = this.myController.computeRoute(theStart, theEnd, 0.05, 5);
+        final Intersection theStart = this.myCar.getMap().getIntersection(theStartID);
+        final Intersection theEnd = this.myCar.getMap().getIntersection(theEndID);
+        final Route[] routes = this.myCar.computeRoute(theStart, theEnd, 0.05, 5);
+
+        if(routes == null) {
+            JOptionPane.showMessageDialog(this, "Routing error", "No routes found!", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
         this.myMapPanel.setEndpoints(theStart, theEnd);
         this.myMapPanel.setRoutes(routes);
@@ -111,10 +114,5 @@ public class RouterGUI extends JFrame {
             myViewMenu.add(visibility);
         }
         this.repaint();
-    }
-
-    public static void main(String[] args) throws SQLException {
-        RouterGUI gui = new RouterGUI();
-        gui.setVisible(true);
     }
 }

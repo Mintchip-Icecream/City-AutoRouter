@@ -3,16 +3,16 @@ CREATE TABLE IF NOT EXISTS "InterConditions" (
 	"simID"	INTEGER NOT NULL,
 	"interID"	INTEGER NOT NULL,
 	"mapID"	INTEGER NOT NULL,
-	"weatherRisk"	INTEGER DEFAULT 0,
-	"obstacleRisk"	INTEGER DEFAULT 0,
-	"trafficRisk"	INTEGER DEFAULT 0,
+	"weatherRisk"	REAL DEFAULT 0,
+	"obstacleRisk"	REAL DEFAULT 0,
+	"trafficRisk"	REAL DEFAULT 0,
 	PRIMARY KEY("interID","simID","mapID"),
 	FOREIGN KEY("interID") REFERENCES "Intersections"("interID") ON DELETE CASCADE,
 	FOREIGN KEY("mapID") REFERENCES "Intersections"("mapID") ON DELETE CASCADE,
 	FOREIGN KEY("simID") REFERENCES "Simulation"("simID") ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "Intersections" (
-	"interID"	INTEGER UNIQUE,
+	"interID"	INTEGER,
 	"mapID"	INTEGER,
 	"isLocation"	INTEGER DEFAULT 0,
 	PRIMARY KEY("interID","mapID"),
@@ -39,11 +39,11 @@ CREATE TABLE IF NOT EXISTS "Roads" (
 );
 CREATE TABLE IF NOT EXISTS "RouteSequence" (
 	"routeID"	INTEGER,
-	"IntersectionID"	INTEGER,
+	"intersectionID"	INTEGER,
 	"mapID"	INTEGER,
 	"sequenceIndex"	INTEGER,
-	PRIMARY KEY("routeID","IntersectionID","mapID"),
-	FOREIGN KEY("IntersectionID") REFERENCES "Intersections"("interID") ON DELETE CASCADE,
+	PRIMARY KEY("routeID","intersectionID","mapID"),
+	FOREIGN KEY("intersectionID") REFERENCES "Intersections"("interID") ON DELETE CASCADE,
 	FOREIGN KEY("mapID") REFERENCES "Intersections"("mapID") ON DELETE CASCADE,
 	FOREIGN KEY("routeID") REFERENCES "Routes"("routeID") ON DELETE CASCADE,
 	CHECK("sequenceIndex" >= 0)

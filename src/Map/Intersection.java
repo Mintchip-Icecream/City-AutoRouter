@@ -10,7 +10,7 @@ import java.util.Objects;
  * and a bool of whether they're a location and can be set as the start of a route.
  *
  * @author June Flores
- * @version 11/15/25
+ * @version 11/30/25
  */
 public class Intersection {
     /**
