@@ -154,7 +154,7 @@ public class SafetyChecker {
      * @param theDecimalPlaces The decimal place of the rounded number.
      * @return The decimal rounded to the decimal place specified.
      */
-    private static double truncateNum(final double theVal, final int theDecimalPlaces) {
+    public  static double truncateNum(final double theVal, final int theDecimalPlaces) {
         double scale = Math.pow(NUMBER_BASE, theDecimalPlaces);
         return (double) Math.round(theVal *  scale) / scale;
     }

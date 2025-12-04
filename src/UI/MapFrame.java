@@ -7,24 +7,19 @@ import Map.Road;
 import Map.CardinalDirection;
 import Routing.Route;
 import Simulation.Conditions;
-import Simulation.SafetyChecker;
 
 import javax.swing.JPanel;
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Point;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.beans.PropertyChangeSupport;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Random;
 import java.util.Set;
 
 public class MapFrame extends JPanel {
@@ -37,19 +32,18 @@ public class MapFrame extends JPanel {
     private static final Color TRAF_DANGER = new Color(0xFFA235);
     private static final Color WEATHER_DANGER = new Color(0x1F9AFF);
     private static final double MINIMUM_ZOOM = 16.0;
-
-
+    private final PropertyChangeSupport myPCS;
 
     private CityMap myCityMap;
-    final private List<Route> myRoutes;
-    final private Set<Route> myVisibleRoutes;
+    private List<Route> myRoutes;
+    private Set<Route> myVisibleRoutes;
     final private Map<Route, Set<Road>> myRouteRoads;
     final private Map<Route, Color> myRouteColors;
     private Intersection myStart;
     private Intersection myEnd;
-    private Intersection myCurrentlyHoveredIntersection;
+    private Intersection myCurrentlyIntersection;
     private Map<Intersection, Point> myIntersections;
-    private Controller myCar;
+    private final Controller myCar;
 //    private boolean mapLoaded = false;
 
     private int myX = 50;
@@ -58,6 +52,7 @@ public class MapFrame extends JPanel {
     private double myZoomFactor = 5;
 
     public MapFrame(Controller theController) {
+        myPCS = new PropertyChangeSupport(this);
         myRoutes = new LinkedList<>();
         myVisibleRoutes = new HashSet<>();
         myRouteRoads = new HashMap<>();
@@ -71,9 +66,20 @@ public class MapFrame extends JPanel {
         addMouseWheelListener(ma);
     }
 
+
     public void setCityMap(final CityMap theCityMap) {
         myCityMap = theCityMap;
     }
+
+    public Intersection getCurrentIntersection() {
+        return myCurrentlyIntersection;
+    }
+
+    public void refreshRoutes() {
+        myRoutes = new LinkedList<>();
+        myVisibleRoutes = new HashSet<>();
+    }
+
     public void addRoute(final Route theRoute, final Color theColor) {
         myRoutes.add(theRoute);
         myVisibleRoutes.add(theRoute);
@@ -97,13 +103,15 @@ public class MapFrame extends JPanel {
      * @param theRoute      the route to configure
      * @param theVisibility whether or not this route should be visible
      */
-    public void setRouteVisibility(final Route theRoute, final boolean theVisibility) {
-        if(theVisibility) {
+    public boolean setRouteVisibility(final Route theRoute, final boolean theVisibility) {
+        if (theVisibility) {
             myVisibleRoutes.add(theRoute);
+//            myPCS.firePropertyChange("newRouteVisible", null, theRoute);
         } else {
             myVisibleRoutes.remove(theRoute);
         }
         repaint();
+        return theVisibility;
     }
 
     private void drawString(final Graphics2D theGraphics, final String theString, final Point thePoint) {
@@ -137,11 +145,11 @@ public class MapFrame extends JPanel {
      * @param theGraphics
      */
     private void drawIntersectionID(final Graphics2D theGraphics) {
-        if (myCurrentlyHoveredIntersection == null) {
+        if (myCurrentlyIntersection == null) {
             return;
         }
-        Point point = myIntersections.get(myCurrentlyHoveredIntersection);
-        theGraphics.drawString("" + myCurrentlyHoveredIntersection.getID(),
+        Point point = myIntersections.get(myCurrentlyIntersection);
+        theGraphics.drawString("" + myCurrentlyIntersection.getID(),
                 myX + point.x * myZoom - 4, myY + point.y * myZoom - 5);
     }
 
@@ -153,9 +161,10 @@ public class MapFrame extends JPanel {
         if(myCityMap == null) {
             return;
         }
-        if (myCurrentlyHoveredIntersection != null) {
+        if (myCurrentlyIntersection != null) {
             drawIntersectionID(g2d);
         }
+
         final Queue<Intersection> queue = new LinkedList<>();
         final Map<Intersection, Point> intersectionPositions = new HashMap<>();
 
@@ -218,8 +227,8 @@ public class MapFrame extends JPanel {
             g2d.setPaint(LINE);
             if(current.equals(myStart) || current.equals(myEnd)) {
                 g2d.setPaint(ENDPOINT);
-            }
-            if (current.isLocation()) {
+                drawIntersection(g2d, currentPos);
+            } else if (current.isLocation()) {
                 g2d.setPaint(LOCATION);
                 drawIntersection(g2d, currentPos);
             }
@@ -233,6 +242,7 @@ public class MapFrame extends JPanel {
         }
         return theRoad.getSource();
     }
+
 
     /**
      * Returns a new Point that is offset in the given direction.
@@ -280,13 +290,7 @@ public class MapFrame extends JPanel {
         public void mousePressed(final MouseEvent theEvent) {
             this.myCurrentX = theEvent.getX();
             this.myCurrentY = theEvent.getY();
-            for (Intersection i : myIntersections.keySet()) {
-                if (atPoint(myIntersections.get(i))) {
-                    myCurrentlyHoveredIntersection = i;
-                    repaint();
-                    break;
-                }
-            }
+            updateCurrentIntersection();
         }
 
         @Override
@@ -299,6 +303,23 @@ public class MapFrame extends JPanel {
         @Override
         public void mouseWheelMoved(final MouseWheelEvent theEvent) {
             MapFrame.this.adjustZoom(theEvent.getWheelRotation());
+        }
+
+        /**
+         * Changes the selected intersection
+         */
+        private void updateCurrentIntersection() {
+            for (Intersection i : myIntersections.keySet()) {
+                if (!i.isLocation()) {
+                    continue;
+                }
+                if (atPoint(myIntersections.get(i))) {
+                    myCurrentlyIntersection = i;
+                    System.out.println(myCurrentlyIntersection.getID());
+                    repaint();
+                    break;
+                }
+            }
         }
 
         private boolean atPoint(Point thePoint) {
