@@ -20,29 +20,84 @@ import java.util.*;
 import java.util.List;
 
 public class MapPanel extends JPanel {
+    /**
+     * Color of our background.
+     */
     private static final Color BACKGROUND = new Color(0xFFFFFF);
+    /**
+     * Color of any text.
+     */
     private static final Color TEXT = new Color(0x000000);
+    /**
+     * Color of a line that isn't conditioned.
+     */
     private static final Color LINE = new Color(0x0000F0);
+    /**
+     * Color of an intersection that's the endpoint of a route.
+     */
     private static final Color ENDPOINT = new Color(0xF000F0);
+    /**
+     * Color of any location intersection that isn't an endpoint of a route.
+     */
     private static final Color LOCATION = new Color(0x262726);
+    /**
+     * Color of a line who's highest simulated condition is obstacles.
+     */
     private static final Color OBS_DANGER = new Color(0xFD5B38);
+    /**
+     * Color of a line who's highest simulated condition is traffic.
+     */
     private static final Color TRAF_DANGER = new Color(0xFFA235);
+    /**
+     * Color of a line who's highest simulated condition is weather.
+     */
     private static final Color WEATHER_DANGER = new Color(0x1F9AFF);
+    /**
+     * The stroke size of a regular map road.
+     */
     private static final Stroke MAP_STROKE = new BasicStroke(1.25f);
+    /**
+     * The stroke size of a highlighted route road.
+     */
     private static final Stroke ROUTE_STROKE = new BasicStroke(2.25f);
     private static final double MINIMUM_ZOOM = 16.0;
-
+    /**
+     * Property change support for sending messages and events notifying a change of state in the mapPanel.
+     */
     private final PropertyChangeSupport myPCS;
-
-    private CityMap myCityMap;
-    private List<Route> myRoutes;
-    private Set<Route> myVisibleRoutes;
+    /**
+     * The current map of the system.
+     */
+    private final CityMap myCityMap;
+    /**
+     * The collection of routes saved into the mapPanel.
+     */
+    private final List<Route> myRoutes;
+    /**
+     * The routes that are visible in the map.
+     */
+    private final Set<Route> myVisibleRoutes;
     final private Map<Route, Set<Road>> myRouteRoads;
     final private Map<Route, Color> myRouteColors;
+    /**
+     * The starting point intersection of the newest visible route.
+     */
     private Intersection myStart;
+    /**
+     * The destination intersection of the newest visible route.
+     */
     private Intersection myEnd;
+    /**
+     * The intersection that's been most recently clicked by the user.
+     */
     private Intersection myCurrentlyIntersection;
+    /**
+     * The collection of intersections and their respective points on the map.
+     */
     private Map<Intersection, Point> myIntersections;
+    /**
+     * The controller of the system that we can interface with to access the backend logic of the system.
+     */
     private final Controller myCar;
 //    private boolean mapLoaded = false;
 
@@ -177,6 +232,7 @@ public class MapPanel extends JPanel {
         if (myCurrentlyIntersection == null) {
             return;
         }
+        theGraphics.setPaint(TEXT);
         Point point = myIntersections.get(myCurrentlyIntersection);
         theGraphics.drawString("" + myCurrentlyIntersection.getID(),
                 myX + point.x * myZoom - 4, myY + point.y * myZoom - 5);
@@ -246,7 +302,7 @@ public class MapPanel extends JPanel {
                             lines.add(myRouteColors.get(route));
                         }
                     }
-
+                    g2d.setStroke(ROUTE_STROKE);
                     for(int i = 0; i < lines.size(); i++) {
                         g2d.setPaint(lines.get(i));
                         final int offset = ((i % 2) == 0 ? 1 : -1) * (i/2 + 1);
@@ -293,7 +349,8 @@ public class MapPanel extends JPanel {
      * @param thePoint      the starting point
      * @return  a new Point object
      */
-    private static Point offset(final CardinalDirection theDirection, final Point thePoint, final Road theRoad) {
+    private Point offset(final CardinalDirection theDirection, final Point thePoint, final Road theRoad) {
+
         return switch(theDirection) {
             case NORTH -> new Point(thePoint.x, thePoint.y - roadNormalized(theRoad));
             case SOUTH -> new Point(thePoint.x, thePoint.y + roadNormalized(theRoad));
@@ -303,10 +360,12 @@ public class MapPanel extends JPanel {
     }
 
     /**
-     * Gets the length multiplier of a
+     * Gets the length multiplier of a road. Longer roads will affect the road's length, but short roads may
+     * look uniform. For some reason, we experimented with using the scaled-up Z scores of a road, but this method
+     * of dividing the road's length by a small amount like 50 meters helps.
      *
-     * @param theRoad
-     * @return
+     * @param theRoad the road we want to multiply the distance of on the map.
+     * @return an integer multiplier for the roads.
      */
     private static int roadNormalized(Road theRoad) {
         int result = (int) Math.round(theRoad.getLength() / 50);
@@ -329,7 +388,10 @@ public class MapPanel extends JPanel {
     }
 
     private class MapMouseAdapter extends MouseAdapter {
-        private int hoverRadius = 10; // radius around point for hover detection.
+        /**
+         * Radius so that when selecting an intersection, you don't need to find the exact pixel it's in.
+         */
+        private static final int CLICK_RADIUS = 10; // radius around point for hover detection.
         private int myCurrentX = 0;
         private int myCurrentY = 0;
 
@@ -379,7 +441,7 @@ public class MapPanel extends JPanel {
         private boolean atPoint(Point thePoint) {
             double distance = Math.sqrt(Math.pow(myCurrentX - (myX + thePoint.x * myZoom - 4), 2) +
                     Math.pow(myCurrentY - (myY + thePoint.y * myZoom - 4), 2));
-            return distance <= hoverRadius;
+            return distance <= CLICK_RADIUS;
         }
     }
 }

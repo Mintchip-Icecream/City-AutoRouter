@@ -91,8 +91,9 @@ public class Controller {
      * @throws IOException if the file path is invalid.
      */
     public void saveMap(String theFileName) throws IOException {
-        String readFile = Files.readString(Path.of(theFileName));
-        CityMap cm = myDB.saveMap(readFile, theFileName);
+        Path path = Path.of(theFileName);
+        String readFile = Files.readString(path);
+        CityMap cm = myDB.saveMap(readFile, String.valueOf(path.getFileName()));
         if (cm != null) {
             loadMap(cm);
         }

@@ -23,6 +23,11 @@ class CityMapTest {
      */
     private static CityMap myDefaultMap;
 
+    /**
+     * Initializes the maps we'll use in the test.
+     *
+     * @throws IOException
+     */
     @BeforeAll
     static void setup() throws IOException {
         myTestMap = new CityMap(Files.readString(Path.of("src/testMap.txt")));

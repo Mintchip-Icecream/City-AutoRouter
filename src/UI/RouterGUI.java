@@ -17,16 +17,33 @@ import java.io.IOException;
 import java.util.Map;
 
 public class RouterGUI extends JFrame {
-
+    /**
+     * The map display for the application.
+     */
     private MapPanel myMapPanel;
+    /**
+     * The controller for the system, which also holds the system's state.
+     */
     private final Controller myCar;
+    /**
+     * The dashboard display for the GUI for the user to interact with.
+     */
     private final Dashboard myDash;
-    private JMenu viewMenu;
-    private JMenu fileMenu;
-    private Intersection myCurrentIntersection;
+    /**
+     * The state-ful menu for selecting routes to be displayed in the GUI.
+     */
+    private final JMenu viewMenu;
+    /**
+     * The state-ful menu for opening and loading maps to and from the system database.
+     */
+    private final JMenu fileMenu;
 
-
-    public RouterGUI(Controller theController) throws IOException {
+    /**
+     * Initializes the GUI for the City AutoRouter application.
+     *
+     * @param theController the Controller containing the state and our interface with the backend layer of the system.
+     */
+    public RouterGUI(Controller theController) {
         super("City-AutoRouter");
         this.setSize(600, 500);
         this.setLocationRelativeTo(null);
@@ -40,6 +57,7 @@ public class RouterGUI extends JFrame {
         this.myCar = theController;
 
         viewMenu = new JMenu("Route View");
+        fileMenu = new JMenu("File");
         this.setJMenuBar(buildMenuBar());
         PropertyChangeListener pcl = new GUIListener();
         this.addPropertyChangeListener(pcl);
@@ -54,15 +72,29 @@ public class RouterGUI extends JFrame {
 //        setCityMap(myCar.getMap());
     }
 
+    /**
+     * Initializes a menu item with the passed text and action handler.
+     *
+     * @param text the text of the menu item.
+     * @param listener the action that's performed when the item is selected.
+     * @return a menu item with the passed text and action handler.
+     */
     private JMenuItem buildMenuItem(String text, ActionListener listener) {
         final JMenuItem item = new JMenuItem(text);
         item.addActionListener(listener);
         return item;
     }
 
+    /**
+     * Initializes the menu bar of the system with items for saving/loading maps, generating simulations,
+     * viewing previous selected routes, getting the user guide, and changing the look and feel of the GUI.
+     *
+     * @return the menu bar of the GUI.
+     */
     private JMenuBar buildMenuBar() {
         final JMenuBar menuBar = new JMenuBar();
-        fileMenu = new JMenu("File");
+        fileMenu.removeAll();
+        viewMenu.removeAll();
         fileMenu.add(openMapItem());
         fileMenu.add(loadMaps());
         menuBar.add(fileMenu);
@@ -72,6 +104,12 @@ public class RouterGUI extends JFrame {
         return menuBar;
     }
 
+    /**
+     * Menu for simulating. Has a button to generate any random simulation, and another that prompts the user for
+     * a seed number that will be the simulation's seed.
+     *
+     * @return the menu for creating simulations.
+     */
     private JMenu simMenu() {
         JMenu sim = new JMenu("Simulation");
         sim.add(buildMenuItem("Generate Simulation", theEvent -> {
@@ -96,6 +134,11 @@ public class RouterGUI extends JFrame {
     }
 
 
+    /**
+     * Menu item for saving a map to the system from a text file. If successful, the map will be displayed in the GUI.
+     *
+     * @return a menu item for prompting a file input from the user representing a CityMap.
+     */
     private JMenuItem openMapItem() {
         JMenuItem openMap = new JMenuItem("Open New Map...");
         openMap.addActionListener(e -> {
@@ -107,7 +150,8 @@ public class RouterGUI extends JFrame {
                 File selectedFile = jfc.getSelectedFile();
                 try {
                     myCar.saveMap(selectedFile.getAbsolutePath());
-                    setCityMap(myCar.getMap());
+                    this.setJMenuBar(buildMenuBar());
+                    setCityMap();
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
@@ -116,6 +160,12 @@ public class RouterGUI extends JFrame {
         return openMap;
     }
 
+    /**
+     * Nested menu for loading a previously saved map. When hovering, it will display the different maps that have been
+     * saved, and selected them will change the map in the GUI.
+     *
+     * @return menu (meant to be nested in File) that loads a previously saved map.
+     */
     private JMenu loadMaps() {
         JMenu loadMap = new JMenu("Load Previous Maps...");
         Map<Integer, String> theMaps = myCar.getMaps();
@@ -126,7 +176,7 @@ public class RouterGUI extends JFrame {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         myCar.loadMap(i);
-                        setCityMap(myCar.getMap());
+                        setCityMap();
                     }
                 });
                 loadMap.add(mapItem);
@@ -134,12 +184,24 @@ public class RouterGUI extends JFrame {
         }
         return loadMap;
     }
+
+    /**
+     * Menu for miscellaneous items, like a menu to change the appearance of the GUI, or the user manual.
+     *
+     * @return a menu for items that don't fit in any category.
+     */
     private JMenu otherMenu() {
         JMenu other = new JMenu("Other...");
         other.add(lookAndFeels());
         return other;
     }
 
+    /**
+     * Menu that sets the look and feel of the GUI depending on which is selected. The look and feel when the app starts
+     * is "System"
+     *
+     * @return menu that sets the look and feel of the GUI.
+     */
     private JMenu lookAndFeels() {
         JMenu laf = new JMenu("Change Look and Feel...");
         ButtonGroup bg = new ButtonGroup();
@@ -166,6 +228,11 @@ public class RouterGUI extends JFrame {
         return laf;
     }
 
+    /**
+     * Sets the look and feel of the GUI, and updates the GUI to reflect the changes.
+     *
+     * @param theLAFName the class name of the look and feel.
+     */
     private void setLookAndFeel(String theLAFName) {
         try {
             UIManager.setLookAndFeel(theLAFName);
@@ -175,15 +242,23 @@ public class RouterGUI extends JFrame {
         SwingUtilities.updateComponentTreeUI(this);
     }
 
-
-    public void setCityMap(final CityMap theCityMap) {
+    /**
+     * Re-initializes the mapPanel when loading a different CityMap to completely refresh the map.
+     */
+    private void setCityMap() {
         this.remove(myMapPanel);
         this.myMapPanel = new MapPanel(myCar);
         this.add(myMapPanel);
         revalidate();
     }
 
-    public void setRoutes(final Route[] theRoutes) {
+
+    /**
+     * Sets the routes into the view menu as a checkList, allowing users to view multiple routes at the same time.
+     *
+     * @param theRoutes
+     */
+    private void setRoutes(final Route[] theRoutes) {
         viewMenu.removeAll();
         Color[] colors = {new Color(0xF00000), new Color(0x00F000)};
         myMapPanel.setRoutes(theRoutes);
@@ -203,7 +278,7 @@ public class RouterGUI extends JFrame {
     /**
      * Sets the routes as a group of radio buttons in case we only want to see one route at a time.
      */
-    public void setRouteSingular(final Route[] theRoutes) {
+    private void setRouteSingular(final Route[] theRoutes) {
         viewMenu.removeAll();
         Color[] colors = {new Color(0xF00000), new Color(0x00F000)};
         ButtonGroup bGroup = new ButtonGroup();
@@ -228,7 +303,7 @@ public class RouterGUI extends JFrame {
      * @param theRoute the route to add.
      * @param isLoaded whether the route that's added was gotten from the database or not
      */
-    public void appendRouteView(final Route theRoute, boolean isLoaded) {
+    private void appendRouteView(final Route theRoute, boolean isLoaded) {
         if (myMapPanel.hasRoute(theRoute)) {
             return;
         }
@@ -246,6 +321,13 @@ public class RouterGUI extends JFrame {
 
     /**
      * Property Change Listener to receive updates in the UI.
+     * "getSelectedIntersectionStart" responds to the dashboard prompting to set their start intersection to the
+     * currently selected intersection in the map GUI. "getSelectedIntersectionEnd" does the same with the destination.
+     * "newRoutesComputed" is deprecated, but sets the "View" menu to the current routes.
+     * "newRouteVisible" indicates that a new route has been set to visible and should be displayed in the dashboard.
+     * "loadThisRoute" handles loading routes to the UI one at a time, adding a single route to the "View" menu
+     * "loadThisSavedRoute" does the same thing as "loadThisRoute" for routes loaded from the database.
+     * "loadedSimulation" signals the system's current simulator changing, and prompts the GUI to update the map.
      */
     private class GUIListener implements PropertyChangeListener {
         @Override

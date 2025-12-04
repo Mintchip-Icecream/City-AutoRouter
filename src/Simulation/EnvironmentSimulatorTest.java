@@ -33,10 +33,11 @@ class EnvironmentSimulatorTest {
      */
     private static final Conditions myDefaultCondition = new Conditions(0, 0, 0);
 
-    @BeforeEach
-    void setUp() {
-    }
-
+    /**
+     * Sets up the maps we'll use in the test
+     *
+     * @throws IOException
+     */
     @BeforeAll
     static void initializeEnvironment() throws IOException {
         myTestMap = new CityMap(Files.readString(Path.of("src/testMap.txt")));
