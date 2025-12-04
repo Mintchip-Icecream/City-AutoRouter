@@ -6,9 +6,13 @@ import java.sql.SQLException;
 
 public class CityAutoRouterApp {
     public static void main(String[] args) throws SQLException, IOException {
-        Controller car = new Controller();
+        Controller car;
+        try {
+            car = new Controller();
+        } catch (SQLException e) {
+            car = new Controller(1, 1);
+        }
         RouterGUI ui = new RouterGUI(car);
-        ui.setCityMap(car.getMap());
         ui.setVisible(true);
     }
 }

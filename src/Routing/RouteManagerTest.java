@@ -45,11 +45,19 @@ class RouteManagerTest {
      */
     private static EnvironmentSimulator myDefaultMapSim;
 
+    /**
+     * Refreshed the router to be a router between the test map and the test sim.
+     */
     @BeforeEach
     void setupRouter() {
         myRouter = new RouteManager(myTestMap, myTestSim);
     }
 
+    /**
+     * Sets up the maps and simulations we'll use in testing.
+     *
+     * @throws IOException
+     */
     @BeforeAll
     static void setupMap() throws IOException {
         myTestMap = new CityMap(Files.readString(Path.of("src/testMap.txt")));

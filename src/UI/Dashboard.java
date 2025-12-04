@@ -16,37 +16,80 @@ import java.util.Map;
 import java.util.Objects;
 
 public class Dashboard extends JPanel {
+    /**
+     * A dark background color for the general background.
+     */
     private final static Color DARK_BACKGROUND = new Color(21, 25, 28);
+    /**
+     * An almost black color for text or accents.
+     */
     private final static Color VERY_DARK = new Color(5, 5, 5);
+    /**
+     * A less dark grey color for buttons and other foreground components.
+     */
     private final static Color DARK_GREY = new Color(53, 53, 60);
+    /**
+     * Light grey color for text boxes and other items that may want to be white.
+     */
     private final static Color LIGHT_GREY = new Color(156, 156, 182);
-    private Controller myCar;
-    private String currentMessage;
-    private JTextArea dialogueField;
-    private Intersection theStart;
-    private Intersection theEnd;
-    private Route myRoute;
-    private JPanel multiButtonContainer;
+    /**
+     * The instance of the controller.
+     */
+    private final Controller myCar;
+    /**
+     * The dialogue box of the dashboard, which serves as a sort of "console" for displaying messages in the system.
+     */
+    private final JTextArea dialogueField;
+    /**
+     * The property change support object for sending messages
+     */
     private final PropertyChangeSupport myPCS;
-    private OptionContainer myOptions;
+    /**
+     * The JPanel container for multi-option lists, like selecting a route.
+     */
+    private final OptionContainer myOptions;
+    /**
+     * The starting intersection for making routes.
+     */
+    private Intersection theStart;
+    /**
+     * The destination intersection for making routes.
+     */
+    private Intersection theEnd;
+    /**
+     * The currently displayed route, or the one passed in the UI.
+     */
+    private Route myRoute;
 
+    /**
+     * Initializes the Dashboard of the CAR GUI.
+     *
+     * @param theController the instance of the Controller object, assumed to be the same as the parent's controller.
+     */
     public Dashboard(Controller theController) {
         super();
         this.myPCS = new PropertyChangeSupport(this);
         this.myCar = theController;
+        this.myOptions = new OptionContainer();
+        dialogueField = InitDialogueField();
         setupPanel();
     }
 
+    /**
+     * Prints a string into the dashboard's textbox or "console"
+     *
+     * @param theString the string that will be displayed.
+     */
     public void dashLog(String theString) {
         dialogueField.setText(theString);
     }
 
-
+    /**
+     * Initializes the various components of the dashboard that don't need to be set to final.
+     */
     private void setupPanel() {
         this.setBackground(DARK_BACKGROUND);
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        this.myOptions = new OptionContainer();
-        dialogueField = InitDialogueField();
         JPanel textHolder = new JPanel();
         textHolder.setOpaque(false);
         textHolder.setLayout(new FlowLayout(FlowLayout.CENTER, 2, 2));
@@ -67,10 +110,19 @@ public class Dashboard extends JPanel {
         setRigidLine();
     }
 
+    /**
+     * Adds a vertical gap between items in the main container to space out different items.
+     */
     private void setRigidLine() {
         add(Box.createRigidArea(new Dimension(0, 5)));
     }
 
+    /**
+     * Button container, meant to be at the top of the dashboard, that saves the current route and simulation when
+     * pressed.
+     *
+     * @return the button container containing the save route and save sim buttons.
+     */
     private JPanel saveSimRouteBox() {
         JPanel result = new JPanel();
         result.setOpaque(false);
@@ -132,27 +184,46 @@ public class Dashboard extends JPanel {
         return routeBox;
     }
 
-
-
+    /**
+     * Sets the currently displayed route to the passed route, prints the directions to the console textbox.
+     *
+     * @param theRoute theRoute we want to display.
+     */
     void setRoute(Route theRoute) {
         myRoute = theRoute;
         dashLog(myRoute.toDirections());
     }
 
+    /**
+     * Sets the property change listener that this dashboard fires events to.
+     *
+     * @param thePCL the property change listener we want the dashboard to send messages to.
+     */
     void setPCL(PropertyChangeListener thePCL) {
         myPCS.addPropertyChangeListener(thePCL);
     }
 
+    /**
+     * Sets the starting intersection, for making routes. Should be a location.
+     *
+     * @param theIntersection the intersection that will be the start of a route.
+     */
     void setStart(Intersection theIntersection) {
         this.theStart = theIntersection;
     }
 
+    /**
+     * Sets the destination intersection, for making routes. Should be a location.
+     *
+     * @param theIntersection the intersection that will be the start of a route.
+     */
     void setEnd(Intersection theIntersection) {
         this.theEnd = theIntersection;
     }
 
     /**
-     * Text field for containing the
+     * Text field for containing routes, errors, and any messages we want to display to the user.
+     *
      * @return the text field for containing routes and errors.
      */
     private JTextArea InitDialogueField() {
@@ -162,6 +233,11 @@ public class Dashboard extends JPanel {
         return theField;
     }
 
+    /**
+     * Initializes a uniform style of button, which has a dark grey background and white text.
+     *
+     * @param theButton the button we want to set the style of.
+     */
     private void setButtonStyle(JButton theButton) {
         theButton.setForeground(Color.WHITE);
         theButton.setBackground(DARK_GREY);
@@ -170,6 +246,13 @@ public class Dashboard extends JPanel {
         theButton.setBorderPainted(false);
     }
 
+    /**
+     * Button for setting the intersections for routes. If isStart = true, then the button will change the intersection
+     * that's currently selected in the map GUI to the start intersection, otherwise it sets the end intersection.
+     *
+     * @param isStart whether this button will set the start intersection, or the end intersection.
+     * @return the button for setting the start and end intersections of routes.
+     */
     private JButton setIntersection(boolean isStart) {
         JButton theButton = new JButton();
         setButtonStyle(theButton);
@@ -197,6 +280,12 @@ public class Dashboard extends JPanel {
         return theButton;
     }
 
+    /**
+     * Button that generates the routes from the current start to the end intersections. The routes are computed
+     * then sent to the options container to be displayed as a list.
+     *
+     * @return button that generates routes when the start and ends are set.
+     */
     private JButton generateRoute() {
         JButton theButton = new JButton();
         setButtonStyle(theButton);
@@ -207,7 +296,6 @@ public class Dashboard extends JPanel {
                 System.out.println("routeLength=" + routes.length);
                 if (routes.length >= 1) {
                     dashLog("Found " + routes.length + " routes for you!");
-//                    myPCS.firePropertyChange("newRoutesComputed", null, routes);
                     myOptions.newRouteList(routes);
                     revalidate();
                 }
@@ -218,6 +306,13 @@ public class Dashboard extends JPanel {
         return theButton;
     }
 
+    /**
+     * Button that loads all the routes saved in the database. The routes are retrieved then displayed into the
+     * options container. The routes aren't complete, as it will have to be selected in the options container to be
+     * turned into a route object to be displayed.
+     *
+     * @return button that loads the routes saved in the database.
+     */
     private JButton loadSavedRoutes() {
         JButton theButton = new JButton();
         setButtonStyle(theButton);
@@ -230,7 +325,14 @@ public class Dashboard extends JPanel {
         return theButton;
     }
 
-    JButton loadSims() {
+    /**
+     * Button that loads all the environment simulations saved in the database. The simulations are retrieved as their
+     * simIDs and displayed on the options container, and whichever one is selected by the user will be completely
+     * deserialized by the controller and displayed in the map GUI.
+     *
+     * @return button that loads the simulations saved in the database.
+     */
+    private JButton loadSims() {
         JButton simB = new JButton("Load Sim");
         setButtonStyle(simB);
         simB.addActionListener(e -> {
@@ -241,6 +343,11 @@ public class Dashboard extends JPanel {
         return simB;
     }
 
+    /**
+     * Button that saves the currently displayed route. Will display a dashboard log whether successful or not.
+     *
+     * @return button that saves the currently saved route.
+     */
     private JButton saveCurrentRoute() {
         JButton theButton = new JButton();
         setButtonStyle(theButton);
@@ -257,6 +364,11 @@ public class Dashboard extends JPanel {
         return theButton;
     }
 
+    /**
+     * Button that saves the current EnvironmentSimulator of the system. Whenever a user wants they can load it back.
+     *
+     * @return button that saves the current environment simulator.
+     */
     private JButton saveCurrentSim() {
         JButton theButton = new JButton();
         setButtonStyle(theButton);
@@ -269,20 +381,30 @@ public class Dashboard extends JPanel {
     }
 
     /**
-     * Class for holding an array of options a user can choose from, like loaded routes, simulations, etc.
+     * Class for holding a list of options a user can choose from, like loaded routes, simulations, etc.
      */
     private class OptionContainer extends JPanel {
+        /**
+         * Grid bag constraints object to specify the layout of objects in the system.
+         */
         private GridBagConstraints myBag = new GridBagConstraints();
+
+        /**
+         * Initializes the container we'll put our list items in.
+         */
         private OptionContainer() {
             this.setBackground(DARK_GREY);
-//            this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-//            this.setPreferredSize(new Dimension(300, 200));
             this.setLayout(new GridBagLayout());
             myBag.insets = new Insets(5, 5, 5, 5);
             this.setOpaque(true);
             this.setVisible(true);
         }
 
+        /**
+         * Transforms the map result from loading saved simulations into the options container.
+         *
+         * @param theSims the rowID'd simulations from the database.
+         */
         private void simMapping(Map<Integer, String> theSims) {
             this.removeAll();
             initGridBagConstraints();
@@ -294,7 +416,6 @@ public class Dashboard extends JPanel {
                 });
                 add(newButton, myBag);
                 myBag.gridy++;
-
             }
         }
 
