@@ -285,6 +285,13 @@ public class Controller {
     }
 
     /**
+     * Generates and loads a new environment simulation into the system using the seed for random number generation.
+     */
+    public void generateSimulationFromSeed(long theLong) {
+        helpLoadSimulation(new EnvironmentSimulator(myMap, theLong));
+    }
+
+    /**
      * Loads the simulation into the system while checking if the simulation and the map are compatible.
      *
      * @param theSim the simulation that will be loaded.
