@@ -19,11 +19,17 @@ import java.beans.PropertyChangeSupport;
 import java.util.*;
 import java.util.List;
 
+/**
+ * The panel that handles the displaying of maps and routes.
+ *
+ * @author Emily Hart and June Flores
+ * @version 12/5/25
+ */
 public class MapPanel extends JPanel {
     /**
      * Color of our background.
      */
-    private static final Color BACKGROUND = new Color(0xFFFFFF);
+    private static final Color BACKGROUND = new Color(0xF4EFEF);
     /**
      * Color of any text.
      */
@@ -31,7 +37,7 @@ public class MapPanel extends JPanel {
     /**
      * Color of a line that isn't conditioned.
      */
-    private static final Color LINE = new Color(0x0000F0);
+    private static final Color LINE = new Color(0x848497);
     /**
      * Color of an intersection that's the endpoint of a route.
      */
@@ -60,6 +66,9 @@ public class MapPanel extends JPanel {
      * The stroke size of a highlighted route road.
      */
     private static final Stroke ROUTE_STROKE = new BasicStroke(2.25f);
+    /**
+     * The most zoomed in that the user can set the map before it stops them from zooming in further.
+     */
     private static final double MINIMUM_ZOOM = 16.0;
     /**
      * Property change support for sending messages and events notifying a change of state in the mapPanel.
@@ -77,8 +86,14 @@ public class MapPanel extends JPanel {
      * The routes that are visible in the map.
      */
     private final Set<Route> myVisibleRoutes;
-    final private Map<Route, Set<Road>> myRouteRoads;
-    final private Map<Route, Color> myRouteColors;
+    /**
+     * The roads that belong to a route.
+     */
+    private final Map<Route, Set<Road>> myRouteRoads;
+    /**
+     * The colors of a route for drawing, we want fairly unique colors for the route.
+     */
+    private final Map<Route, Color> myRouteColors;
     /**
      * The starting point intersection of the newest visible route.
      */
@@ -99,13 +114,28 @@ public class MapPanel extends JPanel {
      * The controller of the system that we can interface with to access the backend logic of the system.
      */
     private final Controller myCar;
-//    private boolean mapLoaded = false;
-
+    /**
+     * The X value of the current map, which allows the location to stay consistent while a user drags the map.
+     */
     private int myX = 50;
+    /**
+     * The Y value of the current map, which allows the location to stay consistent while a user drags the map.
+     */
     private int myY = 100;
+    /**
+     * The current zoom value of the map.
+     */
     private int myZoom = 16;
+    /**
+     * Determines the speed of zooming in or out, higher numbers means that the zoom value changes very extremely.
+     */
     private double myZoomFactor = 5;
 
+    /**
+     * Initializes the needed components of the map.
+     *
+     * @param theController The controller that represents the state of the system.
+     */
     public MapPanel(Controller theController) {
         myPCS = new PropertyChangeSupport(this);
         myRoutes = new LinkedList<>();
@@ -121,10 +151,20 @@ public class MapPanel extends JPanel {
         addMouseWheelListener(ma);
     }
 
+    /**
+     * Returns the intersection that's currently selected by the user.
+     *
+     * @return the currently selected intersection by the user, may be null if a user hasn't clicked any.
+     */
     public Intersection getCurrentIntersection() {
         return myCurrentlyIntersection;
     }
 
+    /**
+     * Displays multiple routes on screen, which are highlighted on the map with random colors.
+     *
+     * @param theRoutes the routes we'll set on the screen.
+     */
     public void setRoutes(final Route[] theRoutes) {
         myRoutes.clear();
         myVisibleRoutes.clear();
@@ -147,10 +187,21 @@ public class MapPanel extends JPanel {
         }
     }
 
+    /**
+     * Checks if the route is already visible or in our stored route collection.
+     *
+     * @param theRoute the route we want to see is already saved to the map instance.
+     * @return true if the route is already contained in the map UI.
+     */
     public boolean hasRoute(final Route theRoute) {
         return myVisibleRoutes.contains(theRoute) || myRoutes.contains(theRoute);
     }
 
+    /**
+     * Adds a singular route with a random color, also clears all other routes and only displays this.
+     *
+     * @param theRoute the route we want to display.
+     */
     public void addRoute(final Route theRoute) {
         final Random rand = new Random(0);
         myVisibleRoutes.clear();
@@ -166,6 +217,12 @@ public class MapPanel extends JPanel {
         myRouteColors.put(theRoute, Color.getHSBColor(rand.nextFloat(), rand.nextFloat(0.5f, 0.8f), 0.9f));
     }
 
+    /**
+     * Sets the end points of the current route, which will be highlighted.
+     *
+     * @param theStart The starting intersection we want to be highlighted.
+     * @param theEnd The ending intersection we want to be highlighted.
+     */
     public void setEndpoints(final Intersection theStart, final Intersection theEnd) {
         myStart = theStart;
         myEnd = theEnd;
@@ -187,10 +244,6 @@ public class MapPanel extends JPanel {
         }
         repaint();
         return theVisibility;
-    }
-
-    private void drawString(final Graphics2D theGraphics, final String theString, final Point thePoint) {
-        theGraphics.drawString(theString, myX + thePoint.x * myZoom, myY + thePoint.y * myZoom);
     }
 
     /**
@@ -226,7 +279,7 @@ public class MapPanel extends JPanel {
 
     /**
      * Draws the currently hovered intersection and it's ID
-     * @param theGraphics
+     * @param theGraphics the Graphics2D instance we'll draw on the GUI with.
      */
     private void drawIntersectionID(final Graphics2D theGraphics) {
         if (myCurrentlyIntersection == null) {
@@ -247,9 +300,6 @@ public class MapPanel extends JPanel {
 
         if(myCityMap == null) {
             return;
-        }
-        if (myCurrentlyIntersection != null) {
-            drawIntersectionID(g2d);
         }
 
         final Queue<Intersection> queue = new LinkedList<>();
@@ -282,14 +332,14 @@ public class MapPanel extends JPanel {
                     Conditions roadCon = myCar.getEnvironment().getCondition(road);
                     double worstCondition = Math.max(roadCon.getWeatherFactor(),
                             Math.max(roadCon.getTrafficDensity(), roadCon.getObstacleSeverity()));
-                    if (worstCondition == roadCon.getTrafficDensity()) {
-                        g2d.setPaint(TRAF_DANGER);
+                    if (worstCondition < 0.333) {
+                        g2d.setPaint(LINE);
                     } else if (worstCondition == roadCon.getWeatherFactor()){
                         g2d.setPaint(WEATHER_DANGER);
                     } else if (worstCondition == roadCon.getObstacleSeverity()) {
                         g2d.setPaint(OBS_DANGER);
                     } else {
-                        g2d.setPaint(LINE);
+                        g2d.setPaint(TRAF_DANGER);
                     }
                     drawLine(g2d, currentPos, intersectionPositions.get(other), 0);
 
@@ -322,7 +372,9 @@ public class MapPanel extends JPanel {
             }
         }
         myIntersections = intersectionPositions;
-
+        if (myCurrentlyIntersection != null) {
+            drawIntersectionID(g2d);
+        }
     }
 
     /**
@@ -375,28 +427,53 @@ public class MapPanel extends JPanel {
         return result;
     }
 
+    /**
+     * Adjusts the X and Y values of the map to allow users to zoom in and drag their position to where they want to see.
+     *
+     * @param theDeltaX the change in X.
+     * @param theDeltaY the change in Y.
+     */
     private void adjustView(final int theDeltaX, final int theDeltaY) {
         this.myX += theDeltaX;
         this.myY += theDeltaY;
         this.repaint();
     }
 
+    /**
+     * Zooms in or out of the map.
+     *
+     * @param theDeltaZoom the change in the zoom as determined by the mouse scroll wheel.
+     */
     private void adjustZoom(final double theDeltaZoom) {
         this.myZoomFactor = Math.clamp(this.myZoomFactor - theDeltaZoom / 4, 1.0, MINIMUM_ZOOM);
         this.myZoom = (int) Math.pow(2, this.myZoomFactor);
         this.repaint();
     }
 
+    /**
+     * MouseAdapter-extending class for handling mouse events on the map GUI.
+     */
     private class MapMouseAdapter extends MouseAdapter {
         /**
          * Radius so that when selecting an intersection, you don't need to find the exact pixel it's in.
          */
         private static final int CLICK_RADIUS = 10; // radius around point for hover detection.
+        /**
+         * The X value of the mouse at the time of updating.
+         */
         private int myCurrentX = 0;
+        /**
+         * The Y value of  the mouse at the time of updating.
+         */
         private int myCurrentY = 0;
 
         MapMouseAdapter() { super(); }
 
+        /**
+         * Updates the mouse coordinates, and checks if an intersection is being pressed.
+         *
+         * @param theEvent the event to be processed
+         */
         @Override
         public void mousePressed(final MouseEvent theEvent) {
             this.myCurrentX = theEvent.getX();
@@ -404,6 +481,11 @@ public class MapPanel extends JPanel {
             updateCurrentIntersection();
         }
 
+        /**
+         * Adjusts the viewing position of the map according to the change in position of the mouse.
+         *
+         * @param theEvent the event to be processed
+         */
         @Override
         public void mouseDragged(final MouseEvent theEvent) {
             MapPanel.this.adjustView(theEvent.getX() - this.myCurrentX, theEvent.getY() - this.myCurrentY);
@@ -411,6 +493,11 @@ public class MapPanel extends JPanel {
             this.myCurrentY = theEvent.getY();
         }
 
+        /**
+         * Adjusts the zoom of the map according to how the mouse wheel is moved.
+         *
+         * @param theEvent the event to be processed
+         */
         @Override
         public void mouseWheelMoved(final MouseWheelEvent theEvent) {
             MapPanel.this.adjustZoom(theEvent.getWheelRotation());

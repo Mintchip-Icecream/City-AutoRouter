@@ -6,32 +6,53 @@ import Routing.Route;
 import Simulation.SafetyChecker;
 
 import javax.swing.*;
-import javax.swing.border.Border;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.Map;
-import java.util.Objects;
 
+/**
+ * The panel that handles the displaying of maps and routes.
+ *
+ * @author Emily Hart and June Flores
+ * @version 12/5/25
+ */
 public class Dashboard extends JPanel {
     /**
      * A dark background color for the general background.
      */
-    private final static Color DARK_BACKGROUND = new Color(21, 25, 28);
+    private static final Color DARK_BACKGROUND = new Color(21, 25, 28);
     /**
      * An almost black color for text or accents.
      */
-    private final static Color VERY_DARK = new Color(5, 5, 5);
+    private static final  Color VERY_DARK = new Color(5, 5, 5);
     /**
      * A less dark grey color for buttons and other foreground components.
      */
-    private final static Color DARK_GREY = new Color(53, 53, 60);
+    private static final Color DARK_GREY = new Color(53, 53, 60);
     /**
      * Light grey color for text boxes and other items that may want to be white.
      */
-    private final static Color LIGHT_GREY = new Color(156, 156, 182);
+    private static final Color LIGHT_GREY = new Color(156, 156, 182);
+    /**
+     * Converts from a double between 0-1 into a percentage
+     */
+    private static final int DOUBLE_TO_PERCENT = 100;
+    /**
+     * The gap between seperate items.
+     */
+    private static final int GAP_SIZE = 10;
+    /**
+     * The amount of characters in the textBox before wrapping the lines.
+     */
+    private static final int LINE_SIZE = 30;
+    /**
+     * The amount of lines in the text box before it starts  to expand
+     */
+    private static final int DEFAULT_TEXT_BOX_HEIGHT = 5;
     /**
      * The instance of the controller.
      */
@@ -41,7 +62,7 @@ public class Dashboard extends JPanel {
      */
     private final JTextArea dialogueField;
     /**
-     * The property change support object for sending messages
+     * The property change support object for sending messages.
      */
     private final PropertyChangeSupport myPCS;
     /**
@@ -66,23 +87,61 @@ public class Dashboard extends JPanel {
      *
      * @param theController the instance of the Controller object, assumed to be the same as the parent's controller.
      */
-    public Dashboard(Controller theController) {
+    public Dashboard(final Controller theController) {
         super();
         this.myPCS = new PropertyChangeSupport(this);
         this.myCar = theController;
         this.myOptions = new OptionContainer();
-        dialogueField = InitDialogueField();
+        dialogueField = initDialogueField();
         setupPanel();
     }
 
     /**
-     * Prints a string into the dashboard's textbox or "console"
+     * Prints a string into the dashboard's textbox or "console".
      *
      * @param theString the string that will be displayed.
      */
-    public void dashLog(String theString) {
+    public void dashLog(final String theString) {
         dialogueField.setText(theString);
     }
+
+    /**
+     * Sets the currently displayed route to the passed route, prints the directions to the console textbox.
+     *
+     * @param theRoute theRoute we want to display.
+     */
+    void setRoute(final Route theRoute) {
+        myRoute = theRoute;
+        dashLog(myRoute.toDirections());
+    }
+
+    /**
+     * Sets the property change listener that this dashboard fires events to.
+     *
+     * @param thePCL the property change listener we want the dashboard to send messages to.
+     */
+    void setPCL(final PropertyChangeListener thePCL) {
+        myPCS.addPropertyChangeListener(thePCL);
+    }
+
+    /**
+     * Sets the starting intersection, for making routes. Should be a location.
+     *
+     * @param theIntersection the intersection that will be the start of a route.
+     */
+    void setStart(final Intersection theIntersection) {
+        this.theStart = theIntersection;
+    }
+
+    /**
+     * Sets the destination intersection, for making routes. Should be a location.
+     *
+     * @param theIntersection the intersection that will be the start of a route.
+     */
+    void setEnd(final Intersection theIntersection) {
+        this.theEnd = theIntersection;
+    }
+
 
     /**
      * Initializes the various components of the dashboard that don't need to be set to final.
@@ -114,7 +173,7 @@ public class Dashboard extends JPanel {
      * Adds a vertical gap between items in the main container to space out different items.
      */
     private void setRigidLine() {
-        add(Box.createRigidArea(new Dimension(0, 5)));
+        add(Box.createRigidArea(new Dimension(0, GAP_SIZE)));
     }
 
     /**
@@ -128,7 +187,7 @@ public class Dashboard extends JPanel {
         result.setOpaque(false);
         result.setLayout(new BoxLayout(result, BoxLayout.X_AXIS));
         result.add(saveCurrentRoute());
-        result.add(Box.createRigidArea(new Dimension(10, 0)));
+        result.add(Box.createRigidArea(new Dimension(GAP_SIZE, 0)));
         result.add(saveCurrentSim());
         return result;
     }
@@ -144,13 +203,13 @@ public class Dashboard extends JPanel {
         result.setOpaque(false);
         result.setLayout(new BoxLayout(result, BoxLayout.Y_AXIS));
         result.add(setupRouteBox());
-        result.add(Box.createRigidArea(new Dimension(0, 10)));
+        result.add(Box.createRigidArea(new Dimension(0, GAP_SIZE)));
         result.add(loadingRouteBox());
         return result;
     }
 
     /**
-     * Creates a JPanel container with buttons for setting the starts and ends of intersections
+     * Creates a JPanel container with buttons for setting the starts and ends of intersections.
      *
      * @return a JPanel container for holding buttons for route setting.
      */
@@ -159,7 +218,7 @@ public class Dashboard extends JPanel {
         routeBox.setOpaque(false);
         routeBox.setLayout(new BoxLayout(routeBox, BoxLayout.X_AXIS));
         routeBox.add(setIntersection(true));
-        routeBox.add(Box.createRigidArea(new Dimension(10, 0)));
+        routeBox.add(Box.createRigidArea(new Dimension(GAP_SIZE, 0)));
         routeBox.add(setIntersection(false));
 //        routeBox.setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
 //        routeBox.setLayout(new GridLayout(1, 2, 5, 5));
@@ -177,48 +236,11 @@ public class Dashboard extends JPanel {
         routeBox.setLayout(new BoxLayout(routeBox, BoxLayout.X_AXIS));
 //        routeBox.setLayout(new GridLayout(1,2, 5, 5));
         routeBox.add(generateRoute());
-        routeBox.add(Box.createRigidArea(new Dimension(10, 0)));
+        routeBox.add(Box.createRigidArea(new Dimension(GAP_SIZE, 0)));
         routeBox.add(loadSavedRoutes());
-        routeBox.add(Box.createRigidArea(new Dimension(10, 0)));
+        routeBox.add(Box.createRigidArea(new Dimension(GAP_SIZE, 0)));
         routeBox.add(loadSims());
         return routeBox;
-    }
-
-    /**
-     * Sets the currently displayed route to the passed route, prints the directions to the console textbox.
-     *
-     * @param theRoute theRoute we want to display.
-     */
-    void setRoute(Route theRoute) {
-        myRoute = theRoute;
-        dashLog(myRoute.toDirections());
-    }
-
-    /**
-     * Sets the property change listener that this dashboard fires events to.
-     *
-     * @param thePCL the property change listener we want the dashboard to send messages to.
-     */
-    void setPCL(PropertyChangeListener thePCL) {
-        myPCS.addPropertyChangeListener(thePCL);
-    }
-
-    /**
-     * Sets the starting intersection, for making routes. Should be a location.
-     *
-     * @param theIntersection the intersection that will be the start of a route.
-     */
-    void setStart(Intersection theIntersection) {
-        this.theStart = theIntersection;
-    }
-
-    /**
-     * Sets the destination intersection, for making routes. Should be a location.
-     *
-     * @param theIntersection the intersection that will be the start of a route.
-     */
-    void setEnd(Intersection theIntersection) {
-        this.theEnd = theIntersection;
     }
 
     /**
@@ -226,8 +248,8 @@ public class Dashboard extends JPanel {
      *
      * @return the text field for containing routes and errors.
      */
-    private JTextArea InitDialogueField() {
-        JTextArea theField = new JTextArea(5, 30);
+    private JTextArea initDialogueField() {
+        JTextArea theField = new JTextArea(DEFAULT_TEXT_BOX_HEIGHT, LINE_SIZE);
         theField.setLineWrap(true);
         theField.setWrapStyleWord(true);
         return theField;
@@ -238,7 +260,7 @@ public class Dashboard extends JPanel {
      *
      * @param theButton the button we want to set the style of.
      */
-    private void setButtonStyle(JButton theButton) {
+    private void setButtonStyle(final JButton theButton) {
         theButton.setForeground(Color.WHITE);
         theButton.setBackground(DARK_GREY);
 
@@ -253,7 +275,7 @@ public class Dashboard extends JPanel {
      * @param isStart whether this button will set the start intersection, or the end intersection.
      * @return the button for setting the start and end intersections of routes.
      */
-    private JButton setIntersection(boolean isStart) {
+    private JButton setIntersection(final boolean isStart) {
         JButton theButton = new JButton();
         setButtonStyle(theButton);
         if (isStart) {
@@ -263,7 +285,7 @@ public class Dashboard extends JPanel {
         }
         theButton.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) {
+            public void actionPerformed(final ActionEvent e) {
                 if (isStart) {
                     myPCS.firePropertyChange("getSelectedIntersectionStart", null, theEnd);
                     if (theStart != null) {
@@ -383,11 +405,15 @@ public class Dashboard extends JPanel {
     /**
      * Class for holding a list of options a user can choose from, like loaded routes, simulations, etc.
      */
-    private class OptionContainer extends JPanel {
+    private final class OptionContainer extends JPanel {
         /**
          * Grid bag constraints object to specify the layout of objects in the system.
          */
-        private GridBagConstraints myBag = new GridBagConstraints();
+        private final GridBagConstraints myBag = new GridBagConstraints();
+        /**
+         * Spacing for the insets of the GridBagConstraints.
+         */
+        private static final int SPACING_SIZE = 5;
 
         /**
          * Initializes the container we'll put our list items in.
@@ -395,7 +421,7 @@ public class Dashboard extends JPanel {
         private OptionContainer() {
             this.setBackground(DARK_GREY);
             this.setLayout(new GridBagLayout());
-            myBag.insets = new Insets(5, 5, 5, 5);
+            myBag.insets = new Insets(SPACING_SIZE, SPACING_SIZE, SPACING_SIZE, SPACING_SIZE);
             this.setOpaque(true);
             this.setVisible(true);
         }
@@ -405,7 +431,7 @@ public class Dashboard extends JPanel {
          *
          * @param theSims the rowID'd simulations from the database.
          */
-        private void simMapping(Map<Integer, String> theSims) {
+        private void simMapping(final Map<Integer, String> theSims) {
             this.removeAll();
             initGridBagConstraints();
             for (Integer i : theSims.keySet()) {
@@ -414,6 +440,7 @@ public class Dashboard extends JPanel {
                     myCar.loadSim(i);
                     myPCS.firePropertyChange("loadedSimulation", null, myCar.getEnvironment());
                 });
+                newButton.setBackground(LIGHT_GREY);
                 add(newButton, myBag);
                 myBag.gridy++;
             }
@@ -424,7 +451,7 @@ public class Dashboard extends JPanel {
          *
          * @param theRoutes the rowID'd routes from the database.
          */
-        private void routeMapping(Map<Integer, int[]> theRoutes) {
+        private void routeMapping(final Map<Integer, int[]> theRoutes) {
             this.removeAll();
             initGridBagConstraints();
             for (Integer i : theRoutes.keySet()) {
@@ -440,6 +467,7 @@ public class Dashboard extends JPanel {
                     }
                     myPCS.firePropertyChange("loadThisSavedRoute", null, theRoute);
                 });
+                newButton.setBackground(LIGHT_GREY);
                 add(newButton, myBag);
                 myBag.gridy++;
             }
@@ -451,10 +479,10 @@ public class Dashboard extends JPanel {
          * @param theRoute the route to add.
          * @param theAdditionalText any text at the beginning we want to add.
          */
-        private void addRouteButton(Route theRoute, String theAdditionalText) {
-            JButton newButton = new JButton(theAdditionalText +
-                    SafetyChecker.truncateNum(myCar.routeSafety(theRoute) * 100, 2) + "% Danger, " +
-                    SafetyChecker.truncateNum(myCar.routeTime(theRoute), 2) + " minutes ");
+        private void addRouteButton(final Route theRoute, final String theAdditionalText) {
+            JButton newButton = new JButton(theAdditionalText
+                    + SafetyChecker.truncateNum(myCar.routeSafety(theRoute) * DOUBLE_TO_PERCENT, 2)
+                    + "% Danger, " + SafetyChecker.truncateNum(myCar.routeTime(theRoute), 2) + " minutes ");
             newButton.addActionListener(e -> {
                myPCS.firePropertyChange("loadThisRoute", null, theRoute);
             });
@@ -468,7 +496,7 @@ public class Dashboard extends JPanel {
          *
          * @param theRoutes the routes we'll make options out of.
          */
-        private void newRouteList(Route[] theRoutes) {
+        private void newRouteList(final Route[] theRoutes) {
             this.removeAll();
             initGridBagConstraints();
             if (theRoutes.length > 1) {
@@ -478,7 +506,7 @@ public class Dashboard extends JPanel {
                     Route routeOpt = theRoutes[i];
                     addRouteButton(routeOpt, "");
                 }
-                Route route2 = theRoutes[theRoutes.length-1];
+                Route route2 = theRoutes[theRoutes.length - 1];
                 addRouteButton(route2, "Shortest Route: ");
             } else {
                 addRouteButton(theRoutes[0], "Only Route: ");

@@ -31,7 +31,7 @@ class Router {
      * An empty constructor for the router class.
      *
      */
-    public Router() { }
+    Router() { }
 
     /**
      * Computes a route without an environment simulation, always returns the fastest possible route, but may be
@@ -349,7 +349,7 @@ class Router {
         /**
          * Sets the new previous node in case a more optimal path to this node is found.
          *
-         * @param theNewNode
+         * @param theNewNode the preceding node of the most optimal found path to this node.
          */
         private void setPrev(final ComparableIntersection theNewNode) {
             this.myPrevNode = theNewNode;

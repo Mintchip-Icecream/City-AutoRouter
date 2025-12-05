@@ -24,8 +24,13 @@ public class Conditions {
      */
     private final double trafficDensity;
 
+
     /**
      * Constructs a condition, with each condition being represented by a number between 0-1 measure level of risk.
+     *
+     * @param theWeatherRisk A number between 0 and 1 representing the risk of the weather.
+     * @param theBlockageRisk  A number between 0 and 1 representing the risk of the obstacles.
+     * @param theTrafficRisk A number between 0 and 1 representing the risk of the traffic.
      */
     public Conditions(final double theWeatherRisk, final double theBlockageRisk, final double theTrafficRisk) {
         if (theWeatherRisk > 1.0 || theWeatherRisk < 0) {
@@ -72,8 +77,10 @@ public class Conditions {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+    public boolean equals(final Object o) {
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         Conditions that = (Conditions) o;
         return Double.compare(weatherFactor, that.weatherFactor) == 0 && Double.compare(blockageSeverity, that.blockageSeverity) == 0 && Double.compare(trafficDensity, that.trafficDensity) == 0;
     }

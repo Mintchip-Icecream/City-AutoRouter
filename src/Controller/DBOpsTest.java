@@ -1,17 +1,30 @@
 package Controller;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import Map.CityMap;
+
 import Routing.Route;
 import Routing.RouteManager;
+
 import Simulation.EnvironmentSimulator;
-import org.junit.jupiter.api.*;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.*;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+
 
 /**
  * Test class for the DBOps class. Each tests the critical functions, like if we can save routes/maps/sims,
@@ -19,6 +32,7 @@ import java.sql.*;
  * same schema as our system database.
  */
 class DBOpsTest {
+    private static final int RNG_SEED = 100;
     /**
      * Our connection to the test DB, which we use to execute queries and modify the DBOps class with.
      */
@@ -51,7 +65,7 @@ class DBOpsTest {
      * a scenario where we save with mapID = 1, but no intersections with mapID = 1 exists because they were wiped,
      * since SQL tends to save the auto-increment number when deleting records.
      *
-     * @throws IOException
+     * @throws IOException if the file we're trying to create the map from doesn't exist.
      */
     @BeforeEach
     void setUp() throws IOException {
@@ -63,7 +77,7 @@ class DBOpsTest {
     /**
      * Deletes all records from the test db we added.
      *
-     * @throws SQLException
+     * @throws SQLException if an error occurs while trying to execute the deletion.
      */
     @AfterEach
     void tearDown() throws SQLException {
@@ -78,7 +92,8 @@ class DBOpsTest {
     /**
      * Initializes the DB connection and sets the DBOps singletone to utilize the testdb instead.
      *
-     * @throws SQLException
+     * @throws SQLException SQL failing to connect to the database file.
+     * @throws IOException File not being found for src/testMap.txt
      */
     @BeforeAll
     static void setUpBeforeClass() throws SQLException, IOException {
@@ -87,10 +102,15 @@ class DBOpsTest {
         myDB = DBOps.getInstance();
         myDB.setConnection(myConnection);
         myMap = new CityMap(Files.readString(Path.of("src/testMap.txt")));
-        mySim = new EnvironmentSimulator(myMap, 100);
+        mySim = new EnvironmentSimulator(myMap, RNG_SEED);
         myRouter = new RouteManager(myMap, mySim);
     }
 
+    /**
+     * Resets the connection back to the standard database so that other classes in the runtime don't fail.\
+     *
+     * @throws SQLException SQL failing to connect to the database file.
+     */
     @AfterAll
     static void resetConnection() throws SQLException {
         myConnection = DriverManager.getConnection("jdbc:sqlite:database/datadb.db");
@@ -100,23 +120,18 @@ class DBOpsTest {
 
     /**
      * Saves a map that uses the same file as myMap, then tests if they're the same.
-     *
-     * @throws IOException
      */
     @Test
-    void saveMap() throws IOException {
+    void saveMap() {
         CityMap loadedMap = new CityMap(myMapID);
         assertEquals(loadedMap, myMap);
     }
 
     /**
      * Saves a simulation, then loads it and checks if the simulations are the same.
-     *
-     * @throws IOException
-     * @throws SQLException
      */
     @Test
-    void saveSim() throws IOException, SQLException {
+    void saveSim() {
         myDB.saveSim(mySim, myMapID);
         CityMap loadedMap = new CityMap(myMapID);
         Integer[] simInts = myDB.getSimulations().keySet().toArray(new Integer[0]);
@@ -128,11 +143,9 @@ class DBOpsTest {
 
     /**
      * Saves a route, then loads it and checks if the simulations are the same.
-     *
-     * @throws IOException
      */
     @Test
-    void saveRoute() throws IOException {
+    void saveRoute() {
         Route theRoute = myRouter.getBestRoutes(myMap.getIntersection(1),
                 myMap.getIntersection(5), 0.1, 1)[0];
         myDB.saveRoute(theRoute, myMapID);
