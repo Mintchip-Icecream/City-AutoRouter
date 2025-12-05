@@ -49,7 +49,7 @@ public class RouteManager {
      * @param theMap The map the route takes place in.
      * @return a route object on the map made up of our intersection list.
      */
-    public Route loadRoute(int[] theIntersectionList, final CityMap theMap) {
+    public Route loadRoute(final int[] theIntersectionList, final CityMap theMap) {
         return new Route(theIntersectionList, theMap);
     }
 

@@ -11,9 +11,12 @@ import Simulation.EnvironmentSimulator;
 import Simulation.SafetyChecker;
 
 import java.io.IOException;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
+
 import java.sql.SQLException;
+
 import java.util.Map;
 import java.util.Random;
 
@@ -21,7 +24,7 @@ import java.util.Random;
  * Controller class for accessing the business logic of the City-AutoRouter system.
  *
  * @author June Flores
- * @version 11/15/25
+ * @version 12/5/25
  */
 public class Controller {
     /**
@@ -29,6 +32,10 @@ public class Controller {
      * the optimal route 20 times with different thresholds up to 100%
      */
     private static final double DEFAULT_THRESHOLD_RATE = 0.05;
+    /**
+     * The database manager and operations class instance of the CAR system.
+     */
+    private final DBOps myDB;
     /**
      * The current simulation of the CAR system.
      */
@@ -41,10 +48,6 @@ public class Controller {
      * The current route manager of the CAR system.
      */
     private RouteManager myRouteManager;
-    /**
-     * The database manager and operations class instance of the CAR system.
-     */
-    private DBOps myDB;
     /**
      * The id of the currently loaded map, used for saving routes and simulations.
      */
@@ -72,16 +75,11 @@ public class Controller {
      * @param theSimID The ID of the simulation in the database.
      * @throws SQLException If SQL connection fails while loading the map or simulation.
      */
-    public Controller(final int theMapID, final int theSimID) throws SQLException{
+    public Controller(final int theMapID, final int theSimID) throws SQLException {
         this.myMap = new CityMap(theMapID);
         this.mySim = new EnvironmentSimulator(theSimID, myMap);
         myRouteManager = new RouteManager(myMap, mySim);
-        DBOps myDB = DBOps.getInstance();
-        System.out.println("CAR System Initialized");
-
-//        this.myUI = new RouterGUI();
-//        this.myUI.setCityMap(theMap);
-//        this.myUI.setVisible(true);
+        myDB = DBOps.getInstance();
     }
 
     /**
@@ -90,7 +88,7 @@ public class Controller {
      * @param theFileName the file path string of the map we want to save.
      * @throws IOException if the file path is invalid.
      */
-    public void saveMap(String theFileName) throws IOException {
+    public void saveMap(final String theFileName) throws IOException {
         Path path = Path.of(theFileName);
         String readFile = Files.readString(path);
         CityMap cm = myDB.saveMap(readFile, String.valueOf(path.getFileName()));
@@ -100,11 +98,11 @@ public class Controller {
     }
 
     /**
-     * Loads a map from the database according to the passed ID
+     * Loads a map from the database according to the passed ID.
      *
      * @param theMapID the row ID of the map in the database.
      */
-    public void loadMap(int theMapID) {
+    public void loadMap(final int theMapID) {
         CityMap newMap = new CityMap(theMapID);
         if (!(newMap.getAllIntersections().length == 0)) {
             myMapID = theMapID;
@@ -171,7 +169,7 @@ public class Controller {
      * @param theRouteID the routeID of the route we want to load.
      * @return the route instance of the loaded route.
      */
-    public Route loadRoute(int theRouteID) {
+    public Route loadRoute(final int theRouteID) {
         int[] interIDList = myDB.loadRoute(theRouteID);
         return myRouteManager.loadRoute(interIDList, myMap);
     }
@@ -287,8 +285,10 @@ public class Controller {
 
     /**
      * Generates and loads a new environment simulation into the system using the seed for random number generation.
+     *
+     * @param theLong the seed for the random number generator.
      */
-    public void generateSimulationFromSeed(long theLong) {
+    public void generateSimulationFromSeed(final long theLong) {
         helpLoadSimulation(new EnvironmentSimulator(myMap, theLong));
     }
 

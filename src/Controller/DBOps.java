@@ -3,7 +3,9 @@ package Controller;
 import Map.CityMap;
 import Map.Intersection;
 import Map.Road;
+
 import Routing.Route;
+
 import Simulation.Conditions;
 import Simulation.EnvironmentSimulator;
 
@@ -65,7 +67,7 @@ public class DBOps {
      */
     public synchronized ResultSet intersectionList(final int theMapID) {
         try {
-            PreparedStatement interStmt = myConnection.prepareStatement("SELECT * FROM Intersections where mapID = ?");
+            PreparedStatement interStmt = myConnection.prepareStatement("SELECT interID, isLocation FROM Intersections where mapID = ?");
             interStmt.setInt(1, theMapID);
             return interStmt.executeQuery();
         } catch (SQLException e) {
@@ -83,7 +85,8 @@ public class DBOps {
      */
     public synchronized ResultSet roadList(final int theMapID) {
         try {
-            PreparedStatement roadStmt = myConnection.prepareStatement("SELECT * FROM Roads where mapID = ?");
+            PreparedStatement roadStmt = myConnection.prepareStatement("SELECT sourceID, destinationID, " +
+                    "roadLength, speedLimit, cardinalDirection FROM Roads where mapID = ?");
             roadStmt.setInt(1, theMapID);
             return roadStmt.executeQuery();
         } catch (SQLException e) {
@@ -114,7 +117,7 @@ public class DBOps {
      * Loads the set of intersections and their conditions in the simulator and updates the Simulation's use date.
      * Used by the EnvironmentSimulator class to load the conditions.
      *
-     * @param theSimID
+     * @param theSimID the row ID of the simulation we're loading
      * @return A ResultSet with (interID, weatherRisk, obstacleRisk, trafficRisk)
      * detailing the conditions in the simulation.
      */

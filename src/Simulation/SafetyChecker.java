@@ -16,22 +16,22 @@ import Routing.Route;
  * @author June Flores
  * @version 11/15/25
  */
-public class SafetyChecker {
+public final class SafetyChecker {
     /**
      * A scalar that determines the exponential power of the road's simulated time. If this is raised, then
      * the increase to a road's simulated time increases much faster when the condition severity is scaled up.
      */
     private static final double CONDITION_SCALAR = 1.5;
     /**
-     * The proportional weight of the weather's contribution to road time increases
+     * The proportional weight of the weather's contribution to road time increases.
      */
     private static final double WEATHER_TIME_WEIGHT = 0.2;
     /**
-     * The proportional weight of the traffic's contribution to road time increases
+     * The proportional weight of the traffic's contribution to road time increases.
      */
     private static final double TRAFFIC_TIME_WEIGHT = 0.4;
     /**
-     * The proportional weight of the roadblock's contribution to road time increases
+     * The proportional weight of the roadblock's contribution to road time increases.
      */
     private static final double OBSTACLE_TIME_WEIGHT = 0.4;
     /**
@@ -59,7 +59,7 @@ public class SafetyChecker {
      * Default constructor for the SafetyChecker. All methods and fields are static, so this doesn't need to be
      * initialized.
      */
-    public SafetyChecker() {}
+    private SafetyChecker() { }
 
     /**
      * Calculates the safety risk of a road according to its conditions in the simulator.

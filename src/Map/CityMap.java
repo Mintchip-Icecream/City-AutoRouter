@@ -4,6 +4,7 @@ import Controller.DBOps;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -60,7 +61,7 @@ public final class CityMap {
      */
     private static final int ROAD_DIRECTION_INDEX = 5;
     /**
-     * The map ID of our default map (the map in simMap.txt), always one
+     * The map ID of our default map (the map in simMap.txt), always one.
      */
     private static final int DEFAULT_MAP_ID = 3;
     /**
@@ -72,7 +73,7 @@ public final class CityMap {
      */
     private final ArrayList<Road> myRoads = new ArrayList<>();
     /**
-     * Default constructor for a CityMap that uses the default map (ID = 2)
+     * Default constructor for a CityMap that uses the default map (ID = 2).
      */
     public CityMap() {
         this(getDefaultMapID());
@@ -99,15 +100,14 @@ public final class CityMap {
                 throw new IllegalArgumentException("Passed Map ID did not return any results");
             }
             while (interRS.next()) {
-                addIntersection(interRS.getInt(3), interRS.getInt(1));
-//                System.out.println(myIntersections.get(interRS.getInt(1)));
+                addIntersection(interRS.getInt(INTERSECTION_TYPE_INDEX), interRS.getInt(INTERSECTION_NUM_INDEX));
             }
             while (roadRS.next()) {
-                int sID = roadRS.getInt(1);
-                int dID = roadRS.getInt(2);
-                double roadLen = roadRS.getDouble(4);
-                double speedLim = roadRS.getDouble(5);
-                CardinalDirection direction = CardinalDirection.valueOf(roadRS.getString(6));
+                int sID = roadRS.getInt(ROAD_INTER_SOURCE_INDEX);
+                int dID = roadRS.getInt(ROAD_INTER_DEST_INDEX);
+                double roadLen = roadRS.getDouble(ROAD_LENGTH_INDEX);
+                double speedLim = roadRS.getDouble(ROAD_SPEED_LIMIT_INDEX);
+                CardinalDirection direction = CardinalDirection.valueOf(roadRS.getString(ROAD_DIRECTION_INDEX));
                 addRoad(sID, dID, roadLen, speedLim, direction);
             }
             System.out.println("Map Load Success!");
@@ -138,7 +138,7 @@ public final class CityMap {
                 if (myInputLines[counter].equals("I")) {
                     int isLocation = Integer.parseInt(myInputLines[counter + INTERSECTION_TYPE_INDEX]);
                     int interID = Integer.parseInt(myInputLines[counter + INTERSECTION_NUM_INDEX]);
-                    addIntersection(isLocation, interID);
+                    addIntersection(interID, isLocation);
                     counter += INTERSECTION_LINE_LENGTH;
                 } else if (myInputLines[counter].equals("R")) {
                     int inter1 = Integer.parseInt(myInputLines[counter + ROAD_INTER_SOURCE_INDEX]);
@@ -182,6 +182,11 @@ public final class CityMap {
         return null;
     }
 
+    /**
+     * Returns the default map's rowID, which is currently 3.
+     *
+     * @return the row index of the default map in the database.
+     */
     public static int getDefaultMapID() {
         return DEFAULT_MAP_ID;
     }
@@ -268,7 +273,7 @@ public final class CityMap {
      * @param theIntersectionID The unique ID number of the intersection,
      *                       if the ID is already existing, it will override the previous intersection.
      */
-    private void addIntersection(final int isLocation1, final int theIntersectionID) {
+    private void addIntersection(final int theIntersectionID, final int isLocation1) {
         myIntersections.put(theIntersectionID, new Intersection(isLocation1 == 1, theIntersectionID));
     }
 

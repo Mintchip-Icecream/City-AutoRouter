@@ -10,12 +10,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+
 
 class CityMapTest {
     /**
      * A small test map with some edge cases (intersections that have no connections, separate "islands" or
-     * intersections that are connected to each other but outside the rest of the map.)
+     * intersections that are connected to each other but outside the rest of the map).
      */
     private static CityMap myTestMap;
     /**
@@ -41,7 +48,7 @@ class CityMapTest {
     void throwsInvalidTxtShortLine() {
         String text = "I 1 I 1 2 R 1 2 100 10 S";
         assertThrows(IllegalArgumentException.class,
-                () ->{new CityMap(text);},
+                () -> { new CityMap(text); },
                 "IllegalArgumentException should have been thrown for intersection line too short");
     }
     /**
@@ -51,7 +58,7 @@ class CityMapTest {
     void throwsInvalidTxtShortLineLast() {
         String text = "I 1 1 I 1 2 R 1 2 100 ";
         assertThrows(IllegalArgumentException.class,
-                () ->{new CityMap(text);},
+                () -> { new CityMap(text); },
                 "IllegalArgumentException should have been thrown for lines too short");
     }
 
@@ -61,7 +68,7 @@ class CityMapTest {
     @Test
     void throwsInvalidIDNo() {
         assertThrows(IllegalArgumentException.class,
-                () ->{new CityMap(300);},
+                () -> { new CityMap(300); },
                 "IllegalArgumentException should have been thrown for intersection line too short");
     }
     /**

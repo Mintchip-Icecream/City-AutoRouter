@@ -90,7 +90,7 @@ public class Road {
      * @return the destination intersection.
      */
     public Intersection getDestination() {
-        return myConnection[myConnection.length-1];
+        return myConnection[myConnection.length - 1];
     }
 
     /**
