@@ -216,7 +216,38 @@ public class RouterGUI extends JFrame {
     private JMenu otherMenu() {
         JMenu other = new JMenu("Other...");
         other.add(lookAndFeels());
+        other.add(displayHelp());
         return other;
+    }
+
+    private JMenuItem displayHelp() {
+        String theHelpMessage = "Welcome to City-AutoRouter!\n"
+                + "To get started, just click on any of the black dots on the map (the left side of the window), "
+                + "and click 'Start Location' to set it as the start of your route, or 'End Location' to set it to "
+                + "the destination of your route! \n"
+                + "Afterwards, you'll see a list of routes, how dangerous they are, and how long they are! "
+                + "Pick which ever one is at your comfort level, but you can view any that you want on the map! "
+                + "When you view a map, the directions will show up on your dashboard console too!\n"
+                + "After picking a route, if you want to go there again, just press 'Save Route' at the top of the "
+                + "dashboard to save it! You can find the routes you've saved by clicking 'Load Route' at the bottom "
+                + " of the dashboard. If you want to see the history of maps you just viewed, click 'Route View' at "
+                + "the menu and just select which route you want to see!\n"
+                + "You may see certain roads on your map as blue, red, or yellow, why is that? Well that's the "
+                + "current simulation of the environment! If a road is blue, that means the weather is very intense, "
+                + "if it's red, then there's something blocking the way at the road, and if it's yellow, then "
+                + "the traffic is particularly dense there!\nIf you want to save the current road conditions on screen, "
+                + "just press 'Save Simulation' at the top right to save it! You can find your saved simulations by "
+                + "pressing 'Load Sim' on the dashboard and selecting which one you want to see.\n"
+                + "If you want to create a new simulation, just got on the 'Simulation' tab on the menu bar, and either "
+                + "generate any random simulation, or you can even set the seed, you'll get the same conditions everytime!\n"
+                + "You want to use a different map? Just press 'File' on the menu bar, then open a new map to load any "
+                + "valid map file. You can look at what maps are save too by picking any map from 'Load Previous Map'.\n"
+                + "Don't like the look of the application? You can customize look and feel for the app in the 'Other' "
+                + "tab on menu bar!";
+        return buildMenuItem("Help...", e ->  {
+            JOptionPane.showMessageDialog(this, theHelpMessage,
+                    "User Guide", JOptionPane.INFORMATION_MESSAGE);
+        });
     }
 
     /**
@@ -395,7 +426,7 @@ public class RouterGUI extends JFrame {
                 }
                 appendRouteView(r, true);
                 myMapPanel.setRouteVisibility(r, true);
-                myDash.setRoute((Route) evt.getNewValue());
+                myDash.setRoute(r);
             }
             if (evt.getPropertyName().equals("loadedSimulation")) {
                 myMapPanel.repaint();

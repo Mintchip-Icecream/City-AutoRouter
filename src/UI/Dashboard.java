@@ -440,6 +440,7 @@ public class Dashboard extends JPanel {
                     myCar.loadSim(i);
                     myPCS.firePropertyChange("loadedSimulation", null, myCar.getEnvironment());
                 });
+                newButton.setBackground(LIGHT_GREY);
                 add(newButton, myBag);
                 myBag.gridy++;
             }
@@ -466,6 +467,7 @@ public class Dashboard extends JPanel {
                     }
                     myPCS.firePropertyChange("loadThisSavedRoute", null, theRoute);
                 });
+                newButton.setBackground(LIGHT_GREY);
                 add(newButton, myBag);
                 myBag.gridy++;
             }
