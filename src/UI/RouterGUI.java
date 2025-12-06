@@ -7,7 +7,6 @@ import Routing.Route;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionListener;
-import java.io.IOException;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -15,16 +14,38 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 
+/**
+ * The primary class of the front-end; a Swing JFrame with a MapPanel and SidebarPanel.
+ * Receives an instance of a Controller that is used to interact with the backend.
+ *
+ * @author Emily Hart
+ * @version 12/3/25
+ */
 public class RouterGUI extends JFrame {
 
+    /**
+     * The Controller used by this GUI
+     */
     private final Controller myCar;
-
+    /**
+     * The GUI's map panel, used to display the city map and roads
+     */
     private final MapPanel myMapPanel;
+    /**
+     * The GUI's sidebar panel, used to list the currently computed routes
+     */
     private final SidebarPanel mySidebarPanel;
-
+    /**
+     * The JMenu used to configure which routes are currently displayed
+     */
     private final JMenu myViewMenu;
 
-    public RouterGUI(Controller theController) throws IOException {
+    /**
+     * Constructs a new RouterGUI. This is the primary UI class, so it should only be
+     * constructed once.
+     * @param theController the Controller instance to be used by the UI
+     */
+    public RouterGUI(Controller theController) {
         super("City-AutoRouter");
         this.setSize(600, 500);
         this.setLocationRelativeTo(null);
@@ -50,12 +71,23 @@ public class RouterGUI extends JFrame {
         this.add(this.mySidebarPanel, c);
     }
 
+    /**
+     * Builds a single menu item with an attached ActionListener.
+     *
+     * @param text      the text for the JMenuItem
+     * @param listener  the ActionListener to attach
+     * @return the created menu item
+     */
     private JMenuItem buildMenuItem(String text, ActionListener listener) {
         final JMenuItem item = new JMenuItem(text);
         item.addActionListener(listener);
         return item;
     }
 
+    /**
+     * Constructs the menu bar and adds the static items to it.
+     * @return the created JMenuBar
+     */
     private JMenuBar buildMenuBar() {
         final JMenu mapMenu = new JMenu("Map");
         mapMenu.add(buildMenuItem("Import new map", theEvent -> {
@@ -90,6 +122,13 @@ public class RouterGUI extends JFrame {
         return menuBar;
     }
 
+    /**
+     * Computes the routes between the specified intersections,
+     * and updates the map & sidebar panels to display the new routes.
+     *
+     * @param theStartID    the ID of the start intersection
+     * @param theEndID      the ID of the end intersection
+     */
     public void computeRoutes(final int theStartID, final int theEndID) {
         final Intersection theStart = this.myCar.getMap().getIntersection(theStartID);
         final Intersection theEnd = this.myCar.getMap().getIntersection(theEndID);
