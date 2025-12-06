@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * The panel that handles the displaying of maps and routes.
  *
- * @author Emily Hart and June Flores
+ * @author June Flores
  * @version 12/5/25
  */
 public class Dashboard extends JPanel {
