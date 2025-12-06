@@ -9,11 +9,7 @@ import Routing.Route;
 import Simulation.Conditions;
 import Simulation.EnvironmentSimulator;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -41,7 +37,8 @@ public class DBOps {
      */
     private DBOps() {
         try {
-            myConnection = DriverManager.getConnection("jdbc:sqlite:database/datadb.db");
+
+            myConnection = DriverManager.getConnection("jdbc:sqlite::resource:database/datadb.db");
             myConnection.setAutoCommit(false);
             System.out.println("foundConnection!");
         } catch (SQLException e) {
