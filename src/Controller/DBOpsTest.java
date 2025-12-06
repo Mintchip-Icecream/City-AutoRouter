@@ -97,7 +97,7 @@ class DBOpsTest {
      */
     @BeforeAll
     static void setUpBeforeClass() throws SQLException, IOException {
-        myConnection = DriverManager.getConnection("jdbc:sqlite:database/testdb.db");
+        myConnection = DriverManager.getConnection("jdbc:sqlite::resource:database/testdb.db");
         myConnection.setAutoCommit(false);
         myDB = DBOps.getInstance();
         myDB.setConnection(myConnection);
@@ -113,7 +113,7 @@ class DBOpsTest {
      */
     @AfterAll
     static void resetConnection() throws SQLException {
-        myConnection = DriverManager.getConnection("jdbc:sqlite:database/datadb.db");
+        myConnection = DriverManager.getConnection("jdbc:sqlite::resource:database/datadb.db");
         myConnection.setAutoCommit(false);
         myDB.setConnection(myConnection);
     }
