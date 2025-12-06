@@ -15,7 +15,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
-import java.beans.PropertyChangeSupport;
 import java.util.*;
 import java.util.List;
 
@@ -71,14 +70,6 @@ public class MapPanel extends JPanel {
      */
     private static final double MINIMUM_ZOOM = 16.0;
     /**
-     * Property change support for sending messages and events notifying a change of state in the mapPanel.
-     */
-    private final PropertyChangeSupport myPCS;
-    /**
-     * The current map of the system.
-     */
-    private final CityMap myCityMap;
-    /**
      * The collection of routes saved into the mapPanel.
      */
     private final List<Route> myRoutes;
@@ -105,7 +96,7 @@ public class MapPanel extends JPanel {
     /**
      * The intersection that's been most recently clicked by the user.
      */
-    private Intersection myCurrentlyIntersection;
+    private Intersection myCurrentIntersection;
     /**
      * The collection of intersections and their respective points on the map.
      */
@@ -137,13 +128,11 @@ public class MapPanel extends JPanel {
      * @param theController The controller that represents the state of the system.
      */
     public MapPanel(Controller theController) {
-        myPCS = new PropertyChangeSupport(this);
         myRoutes = new LinkedList<>();
         myVisibleRoutes = new HashSet<>();
         myRouteRoads = new HashMap<>();
         myRouteColors = new HashMap<>();
         myCar = theController;
-        myCityMap = myCar.getMap();
         setBackground(BACKGROUND);
         MouseAdapter ma = new MapMouseAdapter();
         addMouseListener(ma);
@@ -157,7 +146,7 @@ public class MapPanel extends JPanel {
      * @return the currently selected intersection by the user, may be null if a user hasn't clicked any.
      */
     public Intersection getCurrentIntersection() {
-        return myCurrentlyIntersection;
+        return myCurrentIntersection;
     }
 
     /**
@@ -239,7 +228,6 @@ public class MapPanel extends JPanel {
             myVisibleRoutes.add(theRoute);
             Intersection[] inters = theRoute.getRoute();
             setEndpoints(inters[0], inters[inters.length-1]);
-            myPCS.firePropertyChange("newRouteVisible", null, theRoute);
             revalidate();
         }
         repaint();
@@ -282,12 +270,12 @@ public class MapPanel extends JPanel {
      * @param theGraphics the Graphics2D instance we'll draw on the GUI with.
      */
     private void drawIntersectionID(final Graphics2D theGraphics) {
-        if (myCurrentlyIntersection == null) {
+        if (myCurrentIntersection == null) {
             return;
         }
         theGraphics.setPaint(TEXT);
-        Point point = myIntersections.get(myCurrentlyIntersection);
-        theGraphics.drawString("" + myCurrentlyIntersection.getID(),
+        Point point = myIntersections.get(myCurrentIntersection);
+        theGraphics.drawString("" + myCurrentIntersection.getID(),
                 myX + point.x * myZoom - 4, myY + point.y * myZoom - 5);
     }
 
@@ -298,16 +286,21 @@ public class MapPanel extends JPanel {
         final Graphics2D g2d = (Graphics2D) theGraphics;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        if(myCityMap == null) {
+        if(myCar.getMap() == null) {
             return;
         }
+        drawMap(myCar.getMap().getAllIntersections()[0], g2d);
+        if (myCurrentIntersection != null) {
+            drawIntersectionID(g2d);
+        }
+    }
 
+    private void drawMap(Intersection theStart, Graphics2D theGraphics) {
         final Queue<Intersection> queue = new LinkedList<>();
         final Map<Intersection, Point> intersectionPositions = new HashMap<>();
 
-        Intersection start = myCityMap.getIntersection(1);
-        queue.add(start);
-        intersectionPositions.put(start, new Point(0, 0));
+        queue.add(theStart);
+        intersectionPositions.put(theStart, new Point(0, 0));
 
         while(!queue.isEmpty()) {
             Intersection current = queue.poll();
@@ -326,22 +319,22 @@ public class MapPanel extends JPanel {
                     intersectionPositions.put(other, offset(road.getDirection(current), currentPos, road));
                 } else {
                     // previously seen intersection, draw a road back to it
-                    g2d.setStroke(MAP_STROKE);
+                    theGraphics.setStroke(MAP_STROKE);
 
                     // draws the road line according to the environment simulation
                     Conditions roadCon = myCar.getEnvironment().getCondition(road);
                     double worstCondition = Math.max(roadCon.getWeatherFactor(),
                             Math.max(roadCon.getTrafficDensity(), roadCon.getObstacleSeverity()));
                     if (worstCondition < 0.333) {
-                        g2d.setPaint(LINE);
+                        theGraphics.setPaint(LINE);
                     } else if (worstCondition == roadCon.getWeatherFactor()){
-                        g2d.setPaint(WEATHER_DANGER);
+                        theGraphics.setPaint(WEATHER_DANGER);
                     } else if (worstCondition == roadCon.getObstacleSeverity()) {
-                        g2d.setPaint(OBS_DANGER);
+                        theGraphics.setPaint(OBS_DANGER);
                     } else {
-                        g2d.setPaint(TRAF_DANGER);
+                        theGraphics.setPaint(TRAF_DANGER);
                     }
-                    drawLine(g2d, currentPos, intersectionPositions.get(other), 0);
+                    drawLine(theGraphics, currentPos, intersectionPositions.get(other), 0);
 
                     final List<Color> lines = new LinkedList<>();
 
@@ -352,11 +345,11 @@ public class MapPanel extends JPanel {
                             lines.add(myRouteColors.get(route));
                         }
                     }
-                    g2d.setStroke(ROUTE_STROKE);
+                    theGraphics.setStroke(ROUTE_STROKE);
                     for(int i = 0; i < lines.size(); i++) {
-                        g2d.setPaint(lines.get(i));
+                        theGraphics.setPaint(lines.get(i));
                         final int offset = ((i % 2) == 0 ? 1 : -1) * (i/2 + 1);
-                        drawLine(g2d, currentPos, intersectionPositions.get(other), offset);
+                        drawLine(theGraphics, currentPos, intersectionPositions.get(other), offset);
                     }
                 }
             }
@@ -364,17 +357,14 @@ public class MapPanel extends JPanel {
         for (Map.Entry<Intersection, Point> entry : intersectionPositions.entrySet()) {
             final Intersection intersection = entry.getKey();
             if (intersection.equals(myStart) || intersection.equals(myEnd)) {
-                g2d.setPaint(ENDPOINT);
-                drawIntersection(g2d, entry.getValue());
+                theGraphics.setPaint(ENDPOINT);
+                drawIntersection(theGraphics, entry.getValue());
             } else if (intersection.isLocation()) {
-                g2d.setPaint(LOCATION);
-                drawIntersection(g2d, entry.getValue());
+                theGraphics.setPaint(LOCATION);
+                drawIntersection(theGraphics, entry.getValue());
             }
         }
         myIntersections = intersectionPositions;
-        if (myCurrentlyIntersection != null) {
-            drawIntersectionID(g2d);
-        }
     }
 
     /**
@@ -512,7 +502,7 @@ public class MapPanel extends JPanel {
                     continue;
                 }
                 if (atPoint(myIntersections.get(i))) {
-                    myCurrentlyIntersection = i;
+                    myCurrentIntersection = i;
                     repaint();
                     break;
                 }

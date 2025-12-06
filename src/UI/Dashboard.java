@@ -42,7 +42,7 @@ public class Dashboard extends JPanel {
      */
     private static final int DOUBLE_TO_PERCENT = 100;
     /**
-     * The gap between seperate items.
+     * The gap between separate items.
      */
     private static final int GAP_SIZE = 10;
     /**
@@ -72,11 +72,11 @@ public class Dashboard extends JPanel {
     /**
      * The starting intersection for making routes.
      */
-    private Intersection theStart;
+    private Intersection myStart;
     /**
      * The destination intersection for making routes.
      */
-    private Intersection theEnd;
+    private Intersection myEnd;
     /**
      * The currently displayed route, or the one passed in the UI.
      */
@@ -130,7 +130,7 @@ public class Dashboard extends JPanel {
      * @param theIntersection the intersection that will be the start of a route.
      */
     void setStart(final Intersection theIntersection) {
-        this.theStart = theIntersection;
+        this.myStart = theIntersection;
     }
 
     /**
@@ -139,7 +139,7 @@ public class Dashboard extends JPanel {
      * @param theIntersection the intersection that will be the start of a route.
      */
     void setEnd(final Intersection theIntersection) {
-        this.theEnd = theIntersection;
+        this.myEnd = theIntersection;
     }
 
 
@@ -287,14 +287,14 @@ public class Dashboard extends JPanel {
             @Override
             public void actionPerformed(final ActionEvent e) {
                 if (isStart) {
-                    myPCS.firePropertyChange("getSelectedIntersectionStart", null, theEnd);
-                    if (theStart != null) {
-                        theButton.setText("Start location: " + theStart.getID());
+                    myPCS.firePropertyChange("getSelectedIntersectionStart", null, myEnd);
+                    if (myStart != null) {
+                        theButton.setText("Start location: " + myStart.getID());
                     }
                 } else {
-                    myPCS.firePropertyChange("getSelectedIntersectionEnd", null, theStart);
-                    if (theEnd != null) {
-                        theButton.setText("End Location: " + theEnd.getID());
+                    myPCS.firePropertyChange("getSelectedIntersectionEnd", null, myStart);
+                    if (myEnd != null) {
+                        theButton.setText("End Location: " + myEnd.getID());
                     }
                 }
             }
@@ -313,8 +313,8 @@ public class Dashboard extends JPanel {
         setButtonStyle(theButton);
         theButton.setText("Get Route");
         theButton.addActionListener(e -> {
-            if (theEnd != null && theStart != null && !theEnd.equals(theStart)) {
-                Route[] routes = myCar.computeRoute(theStart, theEnd);
+            if (myEnd != null && myStart != null && !myEnd.equals(myStart)) {
+                Route[] routes = myCar.computeRoute(myStart, myEnd);
                 System.out.println("routeLength=" + routes.length);
                 if (routes.length >= 1) {
                     dashLog("Found " + routes.length + " routes for you!");
